@@ -1,0 +1,11 @@
+.idea/
+artifacts/
+cache/
+deployments/
+typechain-types/
+.vscode/
+node_modules/
+build/
+tmp/
+temp/
+.env
