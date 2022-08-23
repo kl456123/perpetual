@@ -1,10 +1,14 @@
 import Router from '@koa/router';
 import { OrderBookHandlers } from '../handlers/orderbook_handlers';
 import { OrderBookService } from '../services/orderbook_service';
+import { AppDependencies } from '../app';
 
-export function createOrderBookRouter(orderBook: OrderBookService) {
+export function createOrderBookRouter(dependencies: AppDependencies) {
   const router = new Router();
-  const orderBookHandler = new OrderBookHandlers(orderBook);
+  const orderBookHandler = new OrderBookHandlers(
+    dependencies.orderBookService,
+    dependencies.eventManager
+  );
 
   router.get('/', orderBookHandler.orderbookAsync.bind(orderBookHandler));
 

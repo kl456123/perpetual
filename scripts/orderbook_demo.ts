@@ -100,9 +100,7 @@ async function prepareOrders(
 
   //////////////////////////// buy orders //////////////////////////////
   {
-    const prices = ['182.27', '180.36', '178.90'].map(price =>
-      base.times(price)
-    );
+    const prices = ['182.27', '180.36', '178.90'];
     const rates = [1, 2, 3];
 
     const buyOrders = await Promise.all(

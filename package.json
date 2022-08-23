@@ -16,6 +16,7 @@
     "@types/koa__router": "^8.0.11",
     "@types/mocha": "^9.1.0",
     "@types/node": "^16.11.10",
+    "@types/ws": "^8.5.3",
     "@typescript-eslint/eslint-plugin": "^5.18.0",
     "@typescript-eslint/parser": "^5.18.0",
     "chai": "^4.2.0",
@@ -42,7 +43,8 @@
     "pg": "^8.4.0",
     "reflect-metadata": "^0.1.13",
     "typeorm": "0.3.7",
-    "uuid-validate": "^0.0.3"
+    "uuid-validate": "^0.0.3",
+    "ws": "^8.8.1"
   },
   "scripts": {
     "prettier": "prettier --write \"**/*.{js,json,md,ts}\"",

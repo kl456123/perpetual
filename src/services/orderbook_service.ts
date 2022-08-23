@@ -10,6 +10,7 @@ import {
   TradeHistory,
   Price,
   ApiMarketMessage,
+  EventType,
 } from '../types';
 import * as _ from 'lodash';
 import { SignedOrderEntity, TradeHistoryEntity } from '../entities';
@@ -21,6 +22,7 @@ import { Perpetual } from '../perpetual';
 import { logger } from '../logger';
 import { OPERATOR_ADDRESS } from '../config';
 import { calculateFundingrate } from '../utils';
+import { eventManager } from '../events';
 
 export class OrderBookService {
   constructor(
@@ -239,6 +241,7 @@ export class OrderBookService {
       }
 
       const updatedOrders = [];
+      const emittedOrders = [];
       let totalVolume = new BigNumber(0);
       for (let i = 0; i < apiOrders.length; ++i) {
         if (remainingAmount.lte(0)) {
@@ -278,6 +281,7 @@ export class OrderBookService {
         apiOrders[i].metaData.filledAmount =
           apiOrders[i].metaData.filledAmount.plus(tradedAmount);
         updatedOrders.push(orderUtils.serializeOrder(apiOrders[i]));
+        emittedOrders.push(apiOrders[i]);
       }
       const totalTradedAmount = signedOrder.amount.minus(remainingAmount);
       const txRes = await tradeOperation.commit({ from: OPERATOR_ADDRESS });
@@ -289,6 +293,8 @@ export class OrderBookService {
           this.connection.manager.save(updatedOrder)
         )
       );
+      // emit all updated orders
+      emittedOrders.map(order => eventManager.emitOrder(order));
 
       // add current trade to history
       const tradeHistory = new TradeHistoryEntity({
@@ -300,15 +306,24 @@ export class OrderBookService {
         amount: totalTradedAmount.toFixed(0),
       });
       await this.connection.manager.save(tradeHistory);
+      eventManager.emitTradeRecord({
+        ...tradeHistory,
+        amount: new BigNumber(tradeHistory.amount),
+        price: new Price(tradeHistory.price),
+        timestamp: new BigNumber(tradeHistory.timestamp),
+      });
     }
 
-    return signedOrder.amount.minus(remainingAmount);
+    return {
+      filledAmount: signedOrder.amount.minus(remainingAmount),
+      isFullfilled: remainingAmount.eq(0),
+    };
   }
 
   public async addOrderAsync(
     signedOrder: SignedOrder,
     filledAmount = new BigNumber(0)
-  ): Promise<void> {
+  ) {
     const orderHash = this.perpetual.orders.getOrderHash(signedOrder);
     const metaData: SRAOrderMetaData = {
       orderHash,
@@ -322,6 +337,7 @@ export class OrderBookService {
     };
     const signedOrderEntity = orderUtils.serializeOrder(apiOrder);
     await this.connection.manager.save(signedOrderEntity);
+    return apiOrder;
   }
 
   public async getOrdersAsync(

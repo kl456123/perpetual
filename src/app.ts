@@ -1,4 +1,6 @@
 import Koa from 'koa';
+import { createServer } from 'http';
+import { WebSocketServer } from 'ws';
 import cors from '@koa/cors';
 import { createRootRoutes } from './routers';
 import bodyParser from 'koa-bodyparser';
@@ -7,6 +9,7 @@ import { logger } from './logger';
 import { Connection } from 'typeorm';
 import { getDBConnectionAsync } from './db_connection';
 import { addressNormalizer } from './middleware/address_normalizer';
+import { eventManager } from './events';
 import {
   HttpServiceConfig,
   SupportedProvider,
@@ -16,9 +19,11 @@ import {
   ApiMarketName,
 } from './types';
 import { OrderBookService } from './services/orderbook_service';
+import { WebsocketService } from './services/websocket_service';
 import { AccountService } from './services/account_service';
 import { Perpetual } from './perpetual';
 import { CHAIN_ID, WEBSOCKET_ORDER_UPDATES_PATH } from './config';
+import { EventManager } from './events';
 
 export interface AppDependencies {
   contractAddresses: ContractAddresses;
@@ -27,6 +32,7 @@ export interface AppDependencies {
   accountService: AccountService;
   provider: SupportedProvider;
   websocketOpts: Partial<WebsocketSRAOpts>;
+  eventManager: EventManager;
 }
 
 export async function getAppAsync(
@@ -43,7 +49,17 @@ export async function getAppAsync(
 
   app.use(createRootRoutes(dependencies));
 
-  app.listen(config.httpPort, () => {
+  const server = createServer(app.callback());
+  const wsService = new WebsocketService(
+    server,
+    dependencies.eventManager,
+    dependencies.connection,
+    dependencies.orderBookService,
+    dependencies.websocketOpts
+  );
+  wsService.start();
+
+  server.listen(config.httpPort, () => {
     logger.log(`server is running at ${config.httpPort}`);
   });
   return app;
@@ -77,5 +93,6 @@ export async function getDefaultAppDependenciesAsync(
     accountService,
     provider,
     websocketOpts,
+    eventManager,
   };
 }

@@ -339,6 +339,10 @@ export interface OrderbookResponse {
   bids: PaginatedCollection<SRAOrder>;
   asks: PaginatedCollection<SRAOrder>;
 }
+export interface OrderbookWSResponse {
+  bids: SRAOrder[];
+  asks: SRAOrder[];
+}
 
 export type SupportedProvider = ethers.providers.JsonRpcProvider;
 
@@ -371,4 +375,89 @@ export interface TradeHistory {
   amount: BigNumber;
   timestamp: BigNumber;
   blockNumber: number;
+}
+
+////////////////////
+// websocket
+export interface OrderBookSubscriptionOpts {
+  makerToken?: address;
+  takerToken?: address;
+}
+
+export interface OrderBookSubscriptionOptsWithChannel
+  extends OrderBookSubscriptionOpts {
+  channel: MessageChannels;
+}
+
+export interface OrderBookRequest {
+  type: string;
+  channel: MessageChannels;
+  requestId: string;
+  payload: OrderBookSubscriptionOpts;
+}
+
+export enum MessageTypes {
+  Subscribe = 'subscribe',
+}
+
+export enum MessageChannels {
+  Orders = 'orders',
+  TradeHistory = 'trades',
+}
+export interface UpdateOrdersChannelMessageWithChannel
+  extends UpdateOrdersChannelMessage {
+  channel: MessageChannels;
+}
+
+export interface UpdateTradesHistoryChannelMessageWithChannel
+  extends UpdateTradesHistoryChannelMessage {
+  channel: MessageChannels;
+}
+
+export type OrdersChannelMessage =
+  | UpdateOrdersChannelMessage
+  | UnknownOrdersChannelMessage;
+
+export enum OrdersChannelMessageTypes {
+  Update = 'update',
+  Unknown = 'unknown',
+}
+
+export interface UpdateOrdersChannelMessage {
+  type: OrdersChannelMessageTypes.Update;
+  requestId: string;
+  payload: SRAOrder[];
+}
+export interface UnknownOrdersChannelMessage {
+  type: OrdersChannelMessageTypes.Unknown;
+  requestId: string;
+  payload: undefined;
+}
+
+export interface UpdateTradesHistoryChannelMessage {
+  type: OrdersChannelMessageTypes.Update;
+  requestId: string;
+  payload: TradeHistory[];
+}
+
+export enum WebsocketConnectionEventType {
+  Close = 'close',
+  Error = 'error',
+  Message = 'message',
+}
+
+export enum WebsocketClientEventType {
+  Connect = 'connect',
+  ConnectFailed = 'connectFailed',
+}
+
+export enum EventType {
+  // event of orderbook
+  Order = 'Order',
+  OrderBook = 'OrderBook',
+  TradeRecord = 'TradeRecord',
+
+  // event of account
+  Deposit = 'Deposit',
+  Withdraw = 'Withdraw',
 }

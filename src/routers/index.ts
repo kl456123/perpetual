@@ -11,7 +11,7 @@ export function createRootRoutes(dependencies: AppDependencies) {
   router.get('/', rootHandler);
 
   // dependencies
-  const orderBookRouter = createOrderBookRouter(dependencies.orderBookService);
+  const orderBookRouter = createOrderBookRouter(dependencies);
   router.use(
     ORDERBOOK_PATH,
     orderBookRouter.routes(),

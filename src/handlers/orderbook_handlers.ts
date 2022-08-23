@@ -7,9 +7,13 @@ import { SignedOrder, Price, Fee, ApiMarketName, ApiSide } from '../types';
 import { Context } from 'koa';
 import { paginationUtils, jsonifyPerpetualOrder, orderUtils } from '../utils';
 import { logger } from '../logger';
+import { EventManager } from '../events';
 
 export class OrderBookHandlers {
-  constructor(private readonly orderBook: OrderBookService) {}
+  constructor(
+    private readonly orderBook: OrderBookService,
+    private readonly eventManager: EventManager
+  ) {}
 
   public async getOrderByHashAsync(ctx: Context): Promise<void> {
     const orderIfExists = await this.orderBook.getOrderByHashIfExistsAsync(
@@ -94,12 +98,20 @@ export class OrderBookHandlers {
     const shouldSkipConfirmation = ctx.query.skipConfirmation === 'true';
     const signedOrder = unmarshallOrder(ctx.request.body);
 
-    const filledAmount = await this.orderBook.fulfillOrderAsync(signedOrder);
+    const { filledAmount, isFullfilled } =
+      await this.orderBook.fulfillOrderAsync(signedOrder);
 
     if (shouldSkipConfirmation) {
       ctx.status = 200;
     }
-    await this.orderBook.addOrderAsync(signedOrder, filledAmount);
+    const sraOrder = await this.orderBook.addOrderAsync(
+      signedOrder,
+      filledAmount
+    );
+    if (!isFullfilled) {
+      // ignore fulfilled order
+      this.eventManager.emitOrder(sraOrder);
+    }
     logger.info(`order saved`);
     if (!shouldSkipConfirmation) {
       ctx.status = 200;
