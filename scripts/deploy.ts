@@ -34,23 +34,28 @@ async function deployProtocol(
 }
 
 async function deployOracles(
-  perpetualProxyAdddr: string,
+  perpetualProxyAddr: string,
   network: Network,
   addressBook: Record<string, string>
 ) {
-  const makerOracle = getMakerPriceOracleAddress(network);
+  const chainlinkOracle = await deployContract('Test_ChainlinkAggregator');
+  // set fake price in decimal 18
+  await chainlinkOracle.setAnswer(ethers.utils.parseUnits('18200', 18));
 
   const fundingOracle = await deployContract(
     'P1FundingOracle',
     getFundingRateProviderAddress(network)
   );
-  const p1MakerOracle = await deployContract('P1MakerOracle');
 
-  await p1MakerOracle.setRoute(perpetualProxyAdddr, makerOracle);
-  await p1MakerOracle.setAdjustment(makerOracle, getOracleAdjustment(network));
+  const p1ChainlinkOracle = await deployContract(
+    'P1ChainlinkOracle',
+    chainlinkOracle.address,
+    perpetualProxyAddr,
+    getOracleAdjustment(network)
+  );
 
   addressBook['P1FundingOracle'] = fundingOracle.address;
-  addressBook['P1MakerOracle'] = p1MakerOracle.address;
+  addressBook['P1MakerOracle'] = p1ChainlinkOracle.address;
 }
 
 async function deployTraders(
@@ -108,15 +113,19 @@ async function deployTraders(
     'PerpetualV1',
     perpetualProxyAddr
   );
-  await Promise.all([
-    // TODO: Approve either P1Orders or P1InverseOrders depending on the perpetual market.
-    perpetual.setGlobalOperator(p1Orders.address, true),
-    perpetual.setGlobalOperator(p1Deleveraging.address, true),
-    perpetual.setGlobalOperator(p1Liquidation.address, true),
-    perpetual.setGlobalOperator(p1CurrencyConverterProxy.address, true),
-    perpetual.setGlobalOperator(p1LiquidatorProxy.address, true),
-    perpetual.setGlobalOperator(p1WethProxy.address, true),
-  ]);
+
+  const globalOperators = [
+    p1Orders.address,
+    p1InverseOrders.address,
+    p1Deleveraging.address,
+    p1Liquidation.address,
+    p1CurrencyConverterProxy.address,
+    p1LiquidatorProxy.address,
+    p1WethProxy.address,
+  ];
+  for (const globalOperator of globalOperators) {
+    await perpetual.setGlobalOperator(globalOperator, true);
+  }
 
   addressBook['P1Orders'] = p1Orders.address;
   addressBook['P1Liquidation'] = p1Liquidation.address;
@@ -148,7 +157,8 @@ async function initializePerpetual(
 }
 
 async function main() {
-  const network = Network.Ethereum;
+  const { chainId } = await ethers.provider.getNetwork();
+  const network = chainId;
   const addressBook: Record<string, string> = {};
   // deploy perpetual
   await deployProtocol(network, addressBook);

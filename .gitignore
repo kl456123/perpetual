@@ -9,3 +9,6 @@ build/
 tmp/
 temp/
 .env
+.env.local
+.env.okctest
+.env.goerli

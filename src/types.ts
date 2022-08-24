@@ -280,10 +280,6 @@ export enum SIGNATURE_TYPES {
   HEXADECIMAL = 2,
 }
 
-export const Networks = {
-  MAINNET: 1,
-  KOVAN: 42,
-};
 export enum ChainId {
   Mainnet = 1,
   Ropsten = 3,
@@ -356,6 +352,7 @@ export interface BaseHttpServiceConfig {
 
 export interface HttpServiceConfig extends BaseHttpServiceConfig {
   ethereumRpcUrl: string;
+  chainId: ChainId;
 }
 
 export interface ContractAddresses {

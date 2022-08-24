@@ -1,4 +1,5 @@
 import { BigNumber } from 'bignumber.js';
+import { WalletProvider } from './wallet_provider';
 import {
   Fee,
   SigningMethod,
@@ -57,7 +58,7 @@ export const ORDER_FLAGS = {
 
 export class Orders {
   constructor(
-    protected provider: ethers.providers.JsonRpcProvider,
+    protected provider: WalletProvider,
     private contracts: Contracts
   ) {}
 

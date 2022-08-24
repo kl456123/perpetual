@@ -11,7 +11,7 @@ import {
 } from './types';
 import { SignedOrderEntity } from './entities';
 import { logger } from './logger';
-import { ethers } from 'ethers';
+import { ethers, ContractTransaction } from 'ethers';
 import { Context } from 'koa';
 import { DEFAULT_PAGE, DEFAULT_PER_PAGE, ONE_SECOND_MS } from './constants';
 import { MAX_PER_PAGE, SRA_ORDER_EXPIRATION_BUFFER_SECONDS } from './config';
@@ -413,6 +413,11 @@ export const orderUtils = {
     return signedOrderEntity;
   },
 };
+
+export async function waitTx(promise: Promise<ContractTransaction>) {
+  const tx = await promise;
+  await tx.wait();
+}
 
 export {
   generatePseudoRandom256BitNumber,

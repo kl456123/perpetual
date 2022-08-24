@@ -1,11 +1,12 @@
 import { ethers } from 'ethers';
-import { ApiMarketName, Networks, PerpetualOptions } from './types';
+import { ApiMarketName, ChainId, PerpetualOptions } from './types';
 import { Contracts } from './contracts';
 import { Api } from './api';
 import { Orders } from './orders';
 import { Trade } from './trade';
 import { PriceOracle } from './price_oracle';
 import { FundingOracle } from './funding_oracle';
+import { WalletProvider } from './wallet_provider';
 
 export class Perpetual {
   public contracts: Contracts;
@@ -15,12 +16,12 @@ export class Perpetual {
   public priceOracle: PriceOracle;
   public fundingOracle: FundingOracle;
   constructor(
-    public provider: ethers.providers.JsonRpcProvider,
+    public provider: WalletProvider,
     market: ApiMarketName,
-    networkId: number = Networks.MAINNET,
+    chainId: number = ChainId.Mainnet,
     options: PerpetualOptions = {}
   ) {
-    this.contracts = new Contracts(provider, market, networkId);
+    this.contracts = new Contracts(provider, market, chainId);
     this.orders = new Orders(provider, this.contracts);
     this.api = new Api(this.orders, options.apiOptions);
     this.trade = new Trade(this.provider, this.contracts, this.orders);

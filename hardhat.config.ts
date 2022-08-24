@@ -19,6 +19,27 @@ const config: HardhatUserConfig = {
       },
     ],
   },
+  networks: {
+    okc: {
+      url: 'https://exchainrpc.okex.org',
+      accounts: [`${process.env.DEPLOYER_PRIVATE_KEY}`],
+    },
+    okctest: {
+      url: 'https://exchaintestrpc.okex.org',
+      accounts: [`${process.env.DEPLOYER_PRIVATE_KEY}`],
+    },
+    kovan: {
+      url: `https://kovan.infura.io/v3/${process.env.INFURA_API_KEY}`,
+      accounts: [`${process.env.DEPLOYER_PRIVATE_KEY}`],
+    },
+    polygontest: {
+      url: 'https://rpc-mumbai.maticvigil.com/',
+    },
+    goerli: {
+      url: `https://eth-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
+      accounts: [`${process.env.DEPLOYER_PRIVATE_KEY}`],
+    },
+  },
 };
 
 export default config;

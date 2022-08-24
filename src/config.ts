@@ -60,6 +60,23 @@ export const ETHEREUM_RPC_URL = assertEnvVarType(
   EnvVarType.Url
 );
 
+// Some private keys
+export const OPERATOR_PRIVATE_KEY = assertEnvVarType(
+  'OPERATOR_PRIVATE_KEY',
+  process.env.OPERATOR_PRIVATE_KEY,
+  EnvVarType.NonEmptyString
+);
+export const DELEVERAGING_PRIVATE_KEY = assertEnvVarType(
+  'DELEVERAGING_PRIVATE_KEY',
+  process.env.DELEVERAGING_PRIVATE_KEY,
+  EnvVarType.NonEmptyString
+);
+export const DEPLOYER_PRIVATE_KEY = assertEnvVarType(
+  'DEPLOYER_PRIVATE_KEY',
+  process.env.DEPLOYER_PRIVATE_KEY,
+  EnvVarType.NonEmptyString
+);
+
 // The fee recipient for orders
 export const FEE_RECIPIENT_ADDRESS = _.isEmpty(
   process.env.FEE_RECIPIENT_ADDRESS
@@ -72,11 +89,11 @@ export const FEE_RECIPIENT_ADDRESS = _.isEmpty(
     );
 
 // the operator for order settlement on chain
-export const OPERATOR_ADDRESS = _.isEmpty(process.env.OPERATOR_ADDRESS)
+export const OPERATOR_ACCOUNT = _.isEmpty(process.env.OPERATOR_ACCOUNT)
   ? NULL_ADDRESS
   : assertEnvVarType(
-      'OPERATOR_ADDRESS',
-      process.env.OPERATOR_ADDRESS,
+      'OPERATOR_ACCOUNT',
+      process.env.OPERATOR_ACCOUNT,
       EnvVarType.ETHAddressHex
     );
 
@@ -164,6 +181,11 @@ export const LOGGER_INCLUDE_TIMESTAMP = _.isEmpty(
       EnvVarType.Boolean
     );
 
+// Default chain id to use when not specified
+export const CHAIN_ID: ChainId = _.isEmpty(process.env.CHAIN_ID)
+  ? ChainId.Mainnet
+  : assertEnvVarType('CHAIN_ID', process.env.CHAIN_ID, EnvVarType.ChainId);
+
 export const defaultHttpServiceConfig: HttpServiceConfig = {
   httpPort: HTTP_PORT,
   healthcheckHttpPort: HEALTHCHECK_HTTP_PORT,
@@ -171,15 +193,11 @@ export const defaultHttpServiceConfig: HttpServiceConfig = {
   ethereumRpcUrl: ETHEREUM_RPC_URL,
   httpKeepAliveTimeout: HTTP_KEEP_ALIVE_TIMEOUT,
   httpHeadersTimeout: HTTP_HEADERS_TIMEOUT,
+  chainId: CHAIN_ID,
 };
 
 // Max number of entities per page
 export const MAX_PER_PAGE = 1000;
-
-// Default chain id to use when not specified
-export const CHAIN_ID: ChainId = _.isEmpty(process.env.CHAIN_ID)
-  ? ChainId.Kovan
-  : assertEnvVarType('CHAIN_ID', process.env.CHAIN_ID, EnvVarType.ChainId);
 
 function assertEnvVarType(
   name: string,

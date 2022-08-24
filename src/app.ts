@@ -10,6 +10,7 @@ import { Connection } from 'typeorm';
 import { getDBConnectionAsync } from './db_connection';
 import { addressNormalizer } from './middleware/address_normalizer';
 import { eventManager } from './events';
+import { WalletProvider } from './wallet_provider';
 import {
   HttpServiceConfig,
   SupportedProvider,
@@ -22,7 +23,13 @@ import { OrderBookService } from './services/orderbook_service';
 import { WebsocketService } from './services/websocket_service';
 import { AccountService } from './services/account_service';
 import { Perpetual } from './perpetual';
-import { CHAIN_ID, WEBSOCKET_ORDER_UPDATES_PATH } from './config';
+import {
+  CHAIN_ID,
+  WEBSOCKET_ORDER_UPDATES_PATH,
+  DEPLOYER_PRIVATE_KEY,
+  DELEVERAGING_PRIVATE_KEY,
+  OPERATOR_PRIVATE_KEY,
+} from './config';
 import { EventManager } from './events';
 
 export interface AppDependencies {
@@ -81,7 +88,17 @@ export async function getDefaultAppDependenciesAsync(
   );
   const connection = await getDBConnectionAsync();
 
-  const perpetual = new Perpetual(provider, ApiMarketName.PBTC_USDC);
+  const walletProvider = new WalletProvider(provider);
+  walletProvider.unlockAll([
+    DEPLOYER_PRIVATE_KEY,
+    DELEVERAGING_PRIVATE_KEY,
+    OPERATOR_PRIVATE_KEY,
+  ] as string[]);
+  const perpetual = new Perpetual(
+    walletProvider,
+    ApiMarketName.PBTC_USDC,
+    config.chainId
+  );
   const orderBookService = new OrderBookService(connection, perpetual);
   const accountService = new AccountService(perpetual);
 

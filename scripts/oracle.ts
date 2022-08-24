@@ -12,7 +12,7 @@ async function request(route) {
 
 async function main() {
   await request('/orderbook/v1/fundingRate');
-  await request('/account/v1/0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65');
+  await request('/account/v1/0x70997970C51812dc3A010C7d01b50e0d17dc79C8');
   await request('/orderbook/v1/markets');
 }
 

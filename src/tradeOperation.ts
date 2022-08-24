@@ -7,6 +7,7 @@ import {
   SendOptions,
 } from './types';
 import { Orders } from './orders';
+import { WalletProvider } from './wallet_provider';
 import { ethers } from 'ethers';
 import {
   TransactionResponse,
@@ -31,7 +32,7 @@ export class TradeOperation {
   private committed: boolean;
 
   constructor(
-    private provider: ethers.providers.JsonRpcProvider,
+    private provider: WalletProvider,
     private contracts: Contracts,
     orders: Orders
   ) {

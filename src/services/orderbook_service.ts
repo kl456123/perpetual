@@ -20,7 +20,7 @@ import { SRA_ORDER_EXPIRATION_BUFFER_SECONDS } from '../config';
 import { BigNumber } from 'bignumber.js';
 import { Perpetual } from '../perpetual';
 import { logger } from '../logger';
-import { OPERATOR_ADDRESS } from '../config';
+import { OPERATOR_ACCOUNT } from '../config';
 import { calculateFundingrate } from '../utils';
 import { eventManager } from '../events';
 
@@ -146,7 +146,7 @@ export class OrderBookService {
   }
 
   public async getIndexPriceAsync() {
-    const indexPrice = await this.perpetual.contracts.priceOracle.getPrice();
+    const indexPrice = await this.perpetual.priceOracle.getPrice();
     return new BigNumber(indexPrice.toString()).div(1e18);
   }
 
@@ -222,7 +222,7 @@ export class OrderBookService {
       .filter(order =>
         signedOrder.isBuy
           ? order.order.limitPrice.value.lte(signedOrder.limitPrice.value)
-          : order.order.limitPrice.value.gt(signedOrder.limitPrice.value)
+          : order.order.limitPrice.value.gte(signedOrder.limitPrice.value)
       ); // price matched
 
     let remainingAmount = signedOrder.amount;
@@ -262,7 +262,7 @@ export class OrderBookService {
         remainingAmount = remainingAmount.minus(tradedAmount);
         // fill maker order by operator
         tradeOperation.fillSignedOrder(
-          OPERATOR_ADDRESS,
+          OPERATOR_ACCOUNT,
           signedMakerOrder,
           tradedAmount,
           signedMakerOrder.limitPrice,
@@ -270,7 +270,7 @@ export class OrderBookService {
         );
         // fill taker order by operator
         tradeOperation.fillSignedOrder(
-          OPERATOR_ADDRESS,
+          OPERATOR_ACCOUNT,
           signedOrder,
           tradedAmount,
           signedMakerOrder.limitPrice,
@@ -284,7 +284,7 @@ export class OrderBookService {
         emittedOrders.push(apiOrders[i]);
       }
       const totalTradedAmount = signedOrder.amount.minus(remainingAmount);
-      const txRes = await tradeOperation.commit({ from: OPERATOR_ADDRESS });
+      const txRes = await tradeOperation.commit({ from: OPERATOR_ACCOUNT });
       const txRecipient = await txRes.wait();
 
       // update orderbook after tx success first

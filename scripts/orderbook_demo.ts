@@ -1,12 +1,18 @@
 import { logger } from '../src/logger';
 import axios from 'axios';
 import { ethers, Wallet } from 'ethers';
-import { JsonRpcSigner } from '@ethersproject/providers';
 import { ApiMarketName, ApiSide } from '../src/types';
 import { Perpetual } from '../src/perpetual';
 import BigNumber from 'bignumber.js';
-import { jsonifyPerpetualOrder } from '../src/utils';
+import { jsonifyPerpetualOrder, waitTx } from '../src/utils';
 import { NULL_ADDRESS } from '../src/constants';
+import {
+  defaultHttpServiceConfig,
+  DEPLOYER_PRIVATE_KEY,
+  DELEVERAGING_PRIVATE_KEY,
+  OPERATOR_PRIVATE_KEY,
+} from '../src/config';
+import { WalletProvider } from '../src/wallet_provider';
 
 const baseUrl = `http://localhost:3000`;
 
@@ -37,38 +43,40 @@ async function postOrder(orderData) {
   }
 }
 
-async function prepareMoney(perpetual: Perpetual, wallets: JsonRpcSigner[]) {
+async function prepareMoney(perpetual: Perpetual, wallets: Wallet[]) {
   const mintAmount = ethers.utils.parseUnits('1000000', 6); // 1000 margin token
 
   // the first one has permission to mint token
   const mintWallet = wallets[0];
   // mint margin token first
-  await Promise.all(
-    wallets.map(wallet =>
+  for (const wallet of wallets) {
+    await waitTx(
       perpetual.contracts.marginToken
         .connect(mintWallet)
-        .mint(wallet._address, mintAmount)
-    )
-  );
+        .mint(wallet.address, mintAmount)
+    );
+  }
 
   // deposit margin token to perpetual
   const max = ethers.constants.MaxUint256;
-  await Promise.all(
-    wallets.map(async wallet => {
-      await perpetual.contracts.marginToken
+  for (const wallet of wallets) {
+    await waitTx(
+      perpetual.contracts.marginToken
         .connect(wallet)
-        .approve(perpetual.contracts.perpetualProxy.address, max);
-      await perpetual.contracts.perpetualProxy
+        .approve(perpetual.contracts.perpetualProxy.address, max)
+    );
+    await waitTx(
+      perpetual.contracts.perpetualProxy
         .connect(wallet)
-        .deposit(wallet._address, mintAmount);
-    })
-  );
+        .deposit(wallet.address, mintAmount)
+    );
+  }
 }
 
 async function prepareOrders(
   perpetual: Perpetual,
-  makerWallet: JsonRpcSigner,
-  takerWallet: JsonRpcSigner
+  makerWallet: Wallet,
+  takerWallet: Wallet
 ) {
   const market = ApiMarketName.PBTC_USDC;
   const mintAmount = new BigNumber(
@@ -76,11 +84,10 @@ async function prepareOrders(
   ); // 1000 margin token
 
   const orders = [];
-  const base = new BigNumber(10).pow(16);
 
   //////////////////////////// sell orders //////////////////////////////
   {
-    const prices = ['192.59', '187.84', '185.12'];
+    const prices = ['19259', '18784', '18512'];
     const rates = [1, 2, 3];
     const sellOrders = await Promise.all(
       prices.map((price, ind) => {
@@ -89,7 +96,7 @@ async function prepareOrders(
           side: ApiSide.SELL,
           amount: mintAmount.times(rates[ind]).div(price).toString(),
           price,
-          maker: makerWallet._address,
+          maker: makerWallet.address,
           taker: NULL_ADDRESS,
           limitFee: new BigNumber(0),
         });
@@ -100,7 +107,7 @@ async function prepareOrders(
 
   //////////////////////////// buy orders //////////////////////////////
   {
-    const prices = ['182.27', '180.36', '178.90'];
+    const prices = ['18227', '18036', '17890'];
     const rates = [1, 2, 3];
 
     const buyOrders = await Promise.all(
@@ -110,7 +117,7 @@ async function prepareOrders(
           side: ApiSide.BUY,
           amount: mintAmount.times(rates[ind]).div(price).toString(),
           price,
-          maker: takerWallet._address,
+          maker: takerWallet.address,
           taker: NULL_ADDRESS,
           limitFee: new BigNumber(0),
         });
@@ -125,10 +132,10 @@ async function prepareOrders(
   );
 }
 
-async function fillOrder(perpetual: Perpetual, takerWallet: JsonRpcSigner) {
+async function fillOrder(perpetual: Perpetual, takerWallet: Wallet) {
   const market = ApiMarketName.PBTC_USDC;
   const marginAmount = ethers.utils.parseUnits('10000', 6).toString(); // 1000 margin token
-  const price = new BigNumber('193.25');
+  const price = new BigNumber('19325');
   const amount = new BigNumber(marginAmount)
     .times(2)
     .div(price.toString().toString()); // position amount
@@ -137,7 +144,7 @@ async function fillOrder(perpetual: Perpetual, takerWallet: JsonRpcSigner) {
     side: ApiSide.BUY,
     amount,
     price,
-    maker: takerWallet._address,
+    maker: takerWallet.address,
     taker: NULL_ADDRESS,
     limitFee: new BigNumber(0),
   });
@@ -146,19 +153,29 @@ async function fillOrder(perpetual: Perpetual, takerWallet: JsonRpcSigner) {
 }
 
 async function main() {
-  const url = 'http://localhost:8545';
+  const url = defaultHttpServiceConfig.ethereumRpcUrl;
   const provider = new ethers.providers.JsonRpcProvider(url);
+  const usersPrivateKey = [
+    '0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d',
+    '0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a',
+  ];
+  const walletProvider = new WalletProvider(provider);
+  walletProvider.unlockAll([
+    DEPLOYER_PRIVATE_KEY,
+    DELEVERAGING_PRIVATE_KEY,
+    OPERATOR_PRIVATE_KEY,
+    ...usersPrivateKey,
+  ] as string[]);
+
   const market = ApiMarketName.PBTC_USDC;
-  const perpetual = new Perpetual(provider, market);
-  const sellerWallet = provider.getSigner(
-    '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
+  const perpetual = new Perpetual(
+    walletProvider,
+    market,
+    defaultHttpServiceConfig.chainId
   );
-  const buyerWallet = provider.getSigner(
-    '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'
-  );
-  const takerWallet = provider.getSigner(
-    '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC'
-  );
+  const sellerWallet = new ethers.Wallet(DEPLOYER_PRIVATE_KEY, provider);
+  const buyerWallet = new ethers.Wallet(usersPrivateKey[0], provider);
+  const takerWallet = new ethers.Wallet(usersPrivateKey[1], provider);
 
   await prepareMoney(perpetual, [sellerWallet, buyerWallet, takerWallet]);
   await prepareOrders(perpetual, sellerWallet, buyerWallet);
