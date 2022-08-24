@@ -66,8 +66,8 @@ export async function getAppAsync(
   );
   wsService.start();
 
-  server.listen(config.httpPort, () => {
-    logger.log(`server is running at ${config.httpPort}`);
+  server.listen(config.httpPort, config.httpIP, () => {
+    logger.log(`server is running at ${config.httpIP}:${config.httpPort}`);
   });
   return app;
 }

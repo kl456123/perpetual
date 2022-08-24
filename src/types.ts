@@ -344,6 +344,7 @@ export type SupportedProvider = ethers.providers.JsonRpcProvider;
 
 export interface BaseHttpServiceConfig {
   httpPort: number;
+  httpIP: string;
   healthcheckHttpPort: number;
   healthcheckPath: string;
   httpKeepAliveTimeout: number;

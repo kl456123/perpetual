@@ -42,6 +42,10 @@ export const HTTP_PORT = _.isEmpty(process.env.HTTP_PORT)
   ? 3000
   : assertEnvVarType('HTTP_PORT', process.env.HTTP_PORT, EnvVarType.Port);
 
+export const HTTP_IP = _.isEmpty(process.env.HTTP_IP)
+  ? '127.0.0.1'
+  : assertEnvVarType('HTTP_IP', process.env.HTTP_IP, EnvVarType.Url);
+
 // Ignore orders greater than x seconds when responding to SRA requests
 export const SRA_ORDER_EXPIRATION_BUFFER_SECONDS: number = _.isEmpty(
   process.env.SRA_ORDER_EXPIRATION_BUFFER_SECONDS
@@ -188,6 +192,7 @@ export const CHAIN_ID: ChainId = _.isEmpty(process.env.CHAIN_ID)
 
 export const defaultHttpServiceConfig: HttpServiceConfig = {
   httpPort: HTTP_PORT,
+  httpIP: HTTP_IP,
   healthcheckHttpPort: HEALTHCHECK_HTTP_PORT,
   healthcheckPath: HEALTHCHECK_PATH,
   ethereumRpcUrl: ETHEREUM_RPC_URL,
