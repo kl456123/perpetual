@@ -32,6 +32,18 @@ async function getTradeHistory(query) {
   await getRequest(url, query);
 }
 
+async function requestByRoute(route) {
+  const url = `${baseUrl}${route}`;
+  const res = await axios.get(url);
+  const quoteRes = res.data;
+  logger.info(quoteRes);
+  return quoteRes;
+}
+
+async function getBalance(account: string) {
+  await requestByRoute(`/account/v1/${account}`);
+}
+
 async function postOrder(orderData) {
   const url = `${baseUrl}/orderbook/v1/order`;
   try {
@@ -44,7 +56,7 @@ async function postOrder(orderData) {
 }
 
 async function prepareMoney(perpetual: Perpetual, wallets: Wallet[]) {
-  const mintAmount = ethers.utils.parseUnits('1000000', 6); // 1000 margin token
+  const mintAmount = ethers.utils.parseUnits('10000', 6); // 1000 margin token
 
   // the first one has permission to mint token
   const mintWallet = wallets[0];
@@ -184,6 +196,7 @@ async function main() {
   await fillOrder(perpetual, takerWallet);
 
   await getTradeHistory({});
+  await getBalance(takerWallet.address);
 }
 
 main().catch(err => logger.error(err.stack));
