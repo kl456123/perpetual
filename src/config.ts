@@ -64,7 +64,7 @@ export const ETHEREUM_RPC_URL = assertEnvVarType(
   EnvVarType.Url
 );
 
-// Some private keys
+// Some private keys and their account addresses
 export const OPERATOR_PRIVATE_KEY = assertEnvVarType(
   'OPERATOR_PRIVATE_KEY',
   process.env.OPERATOR_PRIVATE_KEY,
@@ -81,6 +81,14 @@ export const DEPLOYER_PRIVATE_KEY = assertEnvVarType(
   EnvVarType.NonEmptyString
 );
 
+export const OPERATOR_ACCOUNT =
+  ethers.utils.computeAddress(OPERATOR_PRIVATE_KEY);
+export const DEPLOYER_ACCOUNT =
+  ethers.utils.computeAddress(DEPLOYER_PRIVATE_KEY);
+export const DELEVERAGING_ACCOUNT = ethers.utils.computeAddress(
+  DELEVERAGING_PRIVATE_KEY
+);
+
 // The fee recipient for orders
 export const FEE_RECIPIENT_ADDRESS = _.isEmpty(
   process.env.FEE_RECIPIENT_ADDRESS
@@ -93,13 +101,13 @@ export const FEE_RECIPIENT_ADDRESS = _.isEmpty(
     );
 
 // the operator for order settlement on chain
-export const OPERATOR_ACCOUNT = _.isEmpty(process.env.OPERATOR_ACCOUNT)
-  ? NULL_ADDRESS
-  : assertEnvVarType(
-      'OPERATOR_ACCOUNT',
-      process.env.OPERATOR_ACCOUNT,
-      EnvVarType.ETHAddressHex
-    );
+// export const OPERATOR_ACCOUNT = _.isEmpty(process.env.OPERATOR_ACCOUNT)
+// ? NULL_ADDRESS
+// : assertEnvVarType(
+// 'OPERATOR_ACCOUNT',
+// process.env.OPERATOR_ACCOUNT,
+// EnvVarType.ETHAddressHex
+// );
 
 export const HEALTHCHECK_HTTP_PORT = _.isEmpty(
   process.env.HEALTHCHECK_HTTP_PORT

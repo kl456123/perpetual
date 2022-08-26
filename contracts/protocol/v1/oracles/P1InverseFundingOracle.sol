@@ -19,8 +19,7 @@
 pragma solidity 0.5.16;
 pragma experimental ABIEncoderV2;
 
-import { P1FundingOracle } from "./P1FundingOracle.sol";
-
+import {P1FundingOracle} from './P1FundingOracle.sol';
 
 /**
  * @title P1InverseFundingOracle
@@ -29,18 +28,13 @@ import { P1FundingOracle } from "./P1FundingOracle.sol";
  * @notice P1FundingOracle that uses the inverted rate (i.e. flips base and quote currencies)
  *  when getting the funding amount.
  */
-contract P1InverseFundingOracle is
-    P1FundingOracle
-{
+contract P1InverseFundingOracle is P1FundingOracle {
     // ============ Constructor ============
 
-    constructor(
-        address fundingRateProvider
-    )
-        P1FundingOracle(fundingRateProvider)
+    constructor(address fundingRateProvider)
         public
-    {
-    }
+        P1FundingOracle(fundingRateProvider)
+    {}
 
     // ============ External Functions ============
 
@@ -52,13 +46,7 @@ contract P1InverseFundingOracle is
      * @return            The funding amount as a unitless rate, represented as a fixed-point number
      *                    with 18 decimals.
      */
-    function getFunding(
-        uint256 timeDelta
-    )
-        public
-        view
-        returns (bool, uint256)
-    {
+    function getFunding(uint256 timeDelta) public view returns (bool, uint256) {
         (bool isPositive, uint256 fundingAmount) = super.getFunding(timeDelta);
         return (!isPositive, fundingAmount);
     }

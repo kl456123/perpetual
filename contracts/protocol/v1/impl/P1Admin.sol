@@ -19,13 +19,12 @@
 pragma solidity 0.5.16;
 pragma experimental ABIEncoderV2;
 
-import { P1FinalSettlement } from "./P1FinalSettlement.sol";
-import { P1Storage } from "./P1Storage.sol";
-import { BaseMath } from "../../lib/BaseMath.sol";
-import { I_P1Funder } from "../intf/I_P1Funder.sol";
-import { I_P1Oracle } from "../intf/I_P1Oracle.sol";
-import { P1Types } from "../lib/P1Types.sol";
-
+import {P1FinalSettlement} from './P1FinalSettlement.sol';
+import {P1Storage} from './P1Storage.sol';
+import {BaseMath} from '../../lib/BaseMath.sol';
+import {I_P1Funder} from '../intf/I_P1Funder.sol';
+import {I_P1Oracle} from '../intf/I_P1Oracle.sol';
+import {P1Types} from '../lib/P1Types.sol';
 
 /**
  * @title P1Admin
@@ -33,32 +32,18 @@ import { P1Types } from "../lib/P1Types.sol";
  *
  * @notice Contract allowing the Admin address to set certain parameters.
  */
-contract P1Admin is
-    P1Storage,
-    P1FinalSettlement
-{
+contract P1Admin is P1Storage, P1FinalSettlement {
     // ============ Events ============
 
-    event LogSetGlobalOperator(
-        address operator,
-        bool approved
-    );
+    event LogSetGlobalOperator(address operator, bool approved);
 
-    event LogSetOracle(
-        address oracle
-    );
+    event LogSetOracle(address oracle);
 
-    event LogSetFunder(
-        address funder
-    );
+    event LogSetFunder(address funder);
 
-    event LogSetMinCollateral(
-        uint256 minCollateral
-    );
+    event LogSetMinCollateral(uint256 minCollateral);
 
-    event LogFinalSettlementEnabled(
-        uint256 settlementPrice
-    );
+    event LogFinalSettlementEnabled(uint256 settlementPrice);
 
     // ============ Functions ============
 
@@ -69,10 +54,7 @@ contract P1Admin is
      * @param  operator  The address for which to enable or disable global operator privileges.
      * @param  approved  True if approved, false if disapproved.
      */
-    function setGlobalOperator(
-        address operator,
-        bool approved
-    )
+    function setGlobalOperator(address operator, bool approved)
         external
         onlyAdmin
         nonReentrant
@@ -87,16 +69,10 @@ contract P1Admin is
      *
      * @param  oracle  The address of the new price oracle contract.
      */
-    function setOracle(
-        address oracle
-    )
-        external
-        onlyAdmin
-        nonReentrant
-    {
+    function setOracle(address oracle) external onlyAdmin nonReentrant {
         require(
             I_P1Oracle(oracle).getPrice() != 0,
-            "New oracle cannot return a zero price"
+            'New oracle cannot return a zero price'
         );
         _ORACLE_ = oracle;
         emit LogSetOracle(oracle);
@@ -108,13 +84,7 @@ contract P1Admin is
      *
      * @param  funder  The address of the new funder contract.
      */
-    function setFunder(
-        address funder
-    )
-        external
-        onlyAdmin
-        nonReentrant
-    {
+    function setFunder(address funder) external onlyAdmin nonReentrant {
         // call getFunding to ensure that no reverts occur
         I_P1Funder(funder).getFunding(0);
 
@@ -129,16 +99,14 @@ contract P1Admin is
      * @param  minCollateral  The new value of the minimum initial collateralization percentage,
      *                        as a fixed-point number with 18 decimals.
      */
-    function setMinCollateral(
-        uint256 minCollateral
-    )
+    function setMinCollateral(uint256 minCollateral)
         external
         onlyAdmin
         nonReentrant
     {
         require(
             minCollateral >= BaseMath.base(),
-            "The collateral requirement cannot be under 100%"
+            'The collateral requirement cannot be under 100%'
         );
         _MIN_COLLATERAL_ = minCollateral;
         emit LogSetMinCollateral(minCollateral);
@@ -155,23 +123,18 @@ contract P1Admin is
     function enableFinalSettlement(
         uint256 priceLowerBound,
         uint256 priceUpperBound
-    )
-        external
-        onlyAdmin
-        noFinalSettlement
-        nonReentrant
-    {
+    ) external onlyAdmin noFinalSettlement nonReentrant {
         // Update the Global Index and grab the Price.
         P1Types.Context memory context = _loadContext();
 
         // Check price bounds.
         require(
             context.price >= priceLowerBound,
-            "Oracle price is less than the provided lower bound"
+            'Oracle price is less than the provided lower bound'
         );
         require(
             context.price <= priceUpperBound,
-            "Oracle price is greater than the provided upper bound"
+            'Oracle price is greater than the provided upper bound'
         );
 
         // Save storage variables.

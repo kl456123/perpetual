@@ -19,13 +19,12 @@
 pragma solidity 0.5.16;
 pragma experimental ABIEncoderV2;
 
-import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
-import { P1TraderConstants } from "./P1TraderConstants.sol";
-import { BaseMath } from "../../lib/BaseMath.sol";
-import { TypedSignature } from "../../lib/TypedSignature.sol";
-import { P1Getters } from "../impl/P1Getters.sol";
-import { P1Types } from "../lib/P1Types.sol";
-
+import {SafeMath} from '@openzeppelin/contracts/math/SafeMath.sol';
+import {P1TraderConstants} from './P1TraderConstants.sol';
+import {BaseMath} from '../../lib/BaseMath.sol';
+import {TypedSignature} from '../../lib/TypedSignature.sol';
+import {P1Getters} from '../impl/P1Getters.sol';
+import {P1Types} from '../lib/P1Types.sol';
 
 /**
  * @title P1Orders
@@ -33,48 +32,52 @@ import { P1Types } from "../lib/P1Types.sol";
  *
  * @notice Contract allowing trading between accounts using cryptographically signed messages.
  */
-contract P1Orders is
-    P1TraderConstants
-{
+contract P1Orders is P1TraderConstants {
     using BaseMath for uint256;
     using SafeMath for uint256;
 
     // ============ Constants ============
 
     // EIP191 header for EIP712 prefix
-    bytes2 constant private EIP191_HEADER = 0x1901;
+    bytes2 private constant EIP191_HEADER = 0x1901;
 
     // EIP712 Domain Name value
-    string constant private EIP712_DOMAIN_NAME = "P1Orders";
+    string private constant EIP712_DOMAIN_NAME = 'P1Orders';
 
     // EIP712 Domain Version value
-    string constant private EIP712_DOMAIN_VERSION = "1.0";
+    string private constant EIP712_DOMAIN_VERSION = '1.0';
 
     // Hash of the EIP712 Domain Separator Schema
     /* solium-disable-next-line indentation */
-    bytes32 constant private EIP712_DOMAIN_SEPARATOR_SCHEMA_HASH = keccak256(abi.encodePacked(
-        "EIP712Domain(",
-        "string name,",
-        "string version,",
-        "uint256 chainId,",
-        "address verifyingContract",
-        ")"
-    ));
+    bytes32 private constant EIP712_DOMAIN_SEPARATOR_SCHEMA_HASH =
+        keccak256(
+            abi.encodePacked(
+                'EIP712Domain(',
+                'string name,',
+                'string version,',
+                'uint256 chainId,',
+                'address verifyingContract',
+                ')'
+            )
+        );
 
     // Hash of the EIP712 LimitOrder struct
     /* solium-disable-next-line indentation */
-    bytes32 constant private EIP712_ORDER_STRUCT_SCHEMA_HASH = keccak256(abi.encodePacked(
-        "Order(",
-        "bytes32 flags,",
-        "uint256 amount,",
-        "uint256 limitPrice,",
-        "uint256 triggerPrice,",
-        "uint256 limitFee,",
-        "address maker,",
-        "address taker,",
-        "uint256 expiration",
-        ")"
-    ));
+    bytes32 private constant EIP712_ORDER_STRUCT_SCHEMA_HASH =
+        keccak256(
+            abi.encodePacked(
+                'Order(',
+                'bytes32 flags,',
+                'uint256 amount,',
+                'uint256 limitPrice,',
+                'uint256 triggerPrice,',
+                'uint256 limitFee,',
+                'address maker,',
+                'address taker,',
+                'uint256 expiration',
+                ')'
+            )
+        );
 
     // Bitmasks for the flags field
     bytes32 constant FLAG_MASK_NULL = bytes32(uint256(0));
@@ -123,15 +126,9 @@ contract P1Orders is
 
     // ============ Events ============
 
-    event LogOrderCanceled(
-        address indexed maker,
-        bytes32 orderHash
-    );
+    event LogOrderCanceled(address indexed maker, bytes32 orderHash);
 
-    event LogOrderApproved(
-        address indexed maker,
-        bytes32 orderHash
-    );
+    event LogOrderApproved(address indexed maker, bytes32 orderHash);
 
     event LogOrderFilled(
         bytes32 orderHash,
@@ -151,29 +148,26 @@ contract P1Orders is
     // ============ Mutable Storage ============
 
     // order hash => filled amount (in position amount)
-    mapping (bytes32 => uint256) public _FILLED_AMOUNT_;
+    mapping(bytes32 => uint256) public _FILLED_AMOUNT_;
 
     // order hash => status
-    mapping (bytes32 => OrderStatus) public _STATUS_;
+    mapping(bytes32 => OrderStatus) public _STATUS_;
 
     // ============ Constructor ============
 
-    constructor (
-        address perpetualV1,
-        uint256 chainId
-    )
-        public
-    {
+    constructor(address perpetualV1, uint256 chainId) public {
         _PERPETUAL_V1_ = perpetualV1;
 
         /* solium-disable-next-line indentation */
-        _EIP712_DOMAIN_HASH_ = keccak256(abi.encode(
-            EIP712_DOMAIN_SEPARATOR_SCHEMA_HASH,
-            keccak256(bytes(EIP712_DOMAIN_NAME)),
-            keccak256(bytes(EIP712_DOMAIN_VERSION)),
-            chainId,
-            address(this)
-        ));
+        _EIP712_DOMAIN_HASH_ = keccak256(
+            abi.encode(
+                EIP712_DOMAIN_SEPARATOR_SCHEMA_HASH,
+                keccak256(bytes(EIP712_DOMAIN_NAME)),
+                keccak256(bytes(EIP712_DOMAIN_VERSION)),
+                chainId,
+                address(this)
+            )
+        );
     }
 
     // ============ External Functions ============
@@ -196,21 +190,15 @@ contract P1Orders is
         uint256 price,
         bytes calldata data,
         bytes32 /* traderFlags */
-    )
-        external
-        returns (P1Types.TradeResult memory)
-    {
+    ) external returns (P1Types.TradeResult memory) {
         address perpetual = _PERPETUAL_V1_;
 
-        require(
-            msg.sender == perpetual,
-            "msg.sender must be PerpetualV1"
-        );
+        require(msg.sender == perpetual, 'msg.sender must be PerpetualV1');
 
         if (taker != sender) {
             require(
                 P1Getters(perpetual).hasAccountPermissions(taker, sender),
-                "Sender does not have permissions for the taker"
+                'Sender does not have permissions for the taker'
             );
         }
 
@@ -218,24 +206,15 @@ contract P1Orders is
         bytes32 orderHash = _getOrderHash(tradeData.order);
 
         // validations
-        _verifyOrderStateAndSignature(
-            tradeData,
-            orderHash
-        );
-        _verifyOrderRequest(
-            tradeData,
-            maker,
-            taker,
-            perpetual,
-            price
-        );
+        _verifyOrderStateAndSignature(tradeData, orderHash);
+        _verifyOrderRequest(tradeData, maker, taker, perpetual, price);
 
         // set _FILLED_AMOUNT_
         uint256 oldFilledAmount = _FILLED_AMOUNT_[orderHash];
         uint256 newFilledAmount = oldFilledAmount.add(tradeData.fill.amount);
         require(
             newFilledAmount <= tradeData.order.amount,
-            "Cannot overfill order"
+            'Cannot overfill order'
         );
         _FILLED_AMOUNT_[orderHash] = newFilledAmount;
 
@@ -256,12 +235,13 @@ contract P1Orders is
             ? tradeData.fill.price.sub(fee)
             : tradeData.fill.price.add(fee);
 
-        return P1Types.TradeResult({
-            marginAmount: tradeData.fill.amount.baseMul(marginPerPosition),
-            positionAmount: tradeData.fill.amount,
-            isBuy: !isBuyOrder,
-            traderFlags: TRADER_FLAG_ORDERS
-        });
+        return
+            P1Types.TradeResult({
+                marginAmount: tradeData.fill.amount.baseMul(marginPerPosition),
+                positionAmount: tradeData.fill.amount,
+                isBuy: !isBuyOrder,
+                traderFlags: TRADER_FLAG_ORDERS
+            });
     }
 
     /**
@@ -270,19 +250,15 @@ contract P1Orders is
      *
      * @param  order  The order that will be approved.
      */
-    function approveOrder(
-        Order calldata order
-    )
-        external
-    {
+    function approveOrder(Order calldata order) external {
         require(
             msg.sender == order.maker,
-            "Order cannot be approved by non-maker"
+            'Order cannot be approved by non-maker'
         );
         bytes32 orderHash = _getOrderHash(order);
         require(
             _STATUS_[orderHash] != OrderStatus.Canceled,
-            "Canceled order cannot be approved"
+            'Canceled order cannot be approved'
         );
         _STATUS_[orderHash] = OrderStatus.Approved;
         emit LogOrderApproved(msg.sender, orderHash);
@@ -294,14 +270,10 @@ contract P1Orders is
      *
      * @param  order  The order that will be permanently canceled.
      */
-    function cancelOrder(
-        Order calldata order
-    )
-        external
-    {
+    function cancelOrder(Order calldata order) external {
         require(
             msg.sender == order.maker,
-            "Order cannot be canceled by non-maker"
+            'Order cannot be canceled by non-maker'
         );
         bytes32 orderHash = _getOrderHash(order);
         _STATUS_[orderHash] = OrderStatus.Canceled;
@@ -317,14 +289,14 @@ contract P1Orders is
      * @return              A list of OrderQueryOutput structs containing the status and filled
      *                      amount of each order.
      */
-    function getOrdersStatus(
-        bytes32[] calldata orderHashes
-    )
+    function getOrdersStatus(bytes32[] calldata orderHashes)
         external
         view
         returns (OrderQueryOutput[] memory)
     {
-        OrderQueryOutput[] memory result = new OrderQueryOutput[](orderHashes.length);
+        OrderQueryOutput[] memory result = new OrderQueryOutput[](
+            orderHashes.length
+        );
         for (uint256 i = 0; i < orderHashes.length; i++) {
             bytes32 orderHash = orderHashes[i];
             result[i] = OrderQueryOutput({
@@ -340,21 +312,19 @@ contract P1Orders is
     function _verifyOrderStateAndSignature(
         TradeData memory tradeData,
         bytes32 orderHash
-    )
-        private
-        view
-    {
+    ) private view {
         OrderStatus orderStatus = _STATUS_[orderHash];
 
         if (orderStatus == OrderStatus.Open) {
             require(
-                tradeData.order.maker == TypedSignature.recover(orderHash, tradeData.signature),
-                "Order has an invalid signature"
+                tradeData.order.maker ==
+                    TypedSignature.recover(orderHash, tradeData.signature),
+                'Order has an invalid signature'
             );
         } else {
             require(
                 orderStatus != OrderStatus.Canceled,
-                "Order was already canceled"
+                'Order was already canceled'
             );
             assert(orderStatus == OrderStatus.Approved);
         }
@@ -366,21 +336,20 @@ contract P1Orders is
         address taker,
         address perpetual,
         uint256 price
-    )
-        private
-        view
-    {
+    ) private view {
         require(
             tradeData.order.maker == maker,
-            "Order maker does not match maker"
+            'Order maker does not match maker'
         );
         require(
-            tradeData.order.taker == taker || tradeData.order.taker == address(0),
-            "Order taker does not match taker"
+            tradeData.order.taker == taker ||
+                tradeData.order.taker == address(0),
+            'Order taker does not match taker'
         );
         require(
-            tradeData.order.expiration >= block.timestamp || tradeData.order.expiration == 0,
-            "Order has expired"
+            tradeData.order.expiration >= block.timestamp ||
+                tradeData.order.expiration == 0,
+            'Order has expired'
         );
 
         // `isBuyOrder` is from the maker's perspective.
@@ -388,35 +357,29 @@ contract P1Orders is
         bool validPrice = isBuyOrder
             ? tradeData.fill.price <= tradeData.order.limitPrice
             : tradeData.fill.price >= tradeData.order.limitPrice;
-        require(
-            validPrice,
-            "Fill price is invalid"
-        );
+        require(validPrice, 'Fill price is invalid');
 
         bool validFee = _isNegativeLimitFee(tradeData.order)
-            ? tradeData.fill.isNegativeFee && tradeData.fill.fee >= tradeData.order.limitFee
-            : tradeData.fill.isNegativeFee || tradeData.fill.fee <= tradeData.order.limitFee;
-        require(
-            validFee,
-            "Fill fee is invalid"
-        );
+            ? tradeData.fill.isNegativeFee &&
+                tradeData.fill.fee >= tradeData.order.limitFee
+            : tradeData.fill.isNegativeFee ||
+                tradeData.fill.fee <= tradeData.order.limitFee;
+        require(validFee, 'Fill fee is invalid');
 
         if (tradeData.order.triggerPrice != 0) {
             bool validTriggerPrice = isBuyOrder
                 ? tradeData.order.triggerPrice <= price
                 : tradeData.order.triggerPrice >= price;
-            require(
-                validTriggerPrice,
-                "Trigger price has not been reached"
-            );
+            require(validTriggerPrice, 'Trigger price has not been reached');
         }
 
         if (_isDecreaseOnly(tradeData.order)) {
-            P1Types.Balance memory balance = P1Getters(perpetual).getAccountBalance(maker);
+            P1Types.Balance memory balance = P1Getters(perpetual)
+                .getAccountBalance(maker);
             require(
-                isBuyOrder != balance.positionIsPositive
-                && tradeData.fill.amount <= balance.position,
-                "Fill does not decrease position"
+                isBuyOrder != balance.positionIsPositive &&
+                    tradeData.fill.amount <= balance.position,
+                'Fill does not decrease position'
             );
         }
     }
@@ -424,56 +387,39 @@ contract P1Orders is
     /**
      * @dev Returns the EIP712 hash of an order.
      */
-    function _getOrderHash(
-        Order memory order
-    )
-        private
-        view
-        returns (bytes32)
-    {
+    function _getOrderHash(Order memory order) private view returns (bytes32) {
         // compute the overall signed struct hash
         /* solium-disable-next-line indentation */
-        bytes32 structHash = keccak256(abi.encode(
-            EIP712_ORDER_STRUCT_SCHEMA_HASH,
-            order
-        ));
+        bytes32 structHash = keccak256(
+            abi.encode(EIP712_ORDER_STRUCT_SCHEMA_HASH, order)
+        );
 
         // compute eip712 compliant hash
         /* solium-disable-next-line indentation */
-        return keccak256(abi.encodePacked(
-            EIP191_HEADER,
-            _EIP712_DOMAIN_HASH_,
-            structHash
-        ));
+        return
+            keccak256(
+                abi.encodePacked(
+                    EIP191_HEADER,
+                    _EIP712_DOMAIN_HASH_,
+                    structHash
+                )
+            );
     }
 
-    function _isBuy(
-        Order memory order
-    )
-        private
-        pure
-        returns (bool)
-    {
+    function _isBuy(Order memory order) private pure returns (bool) {
         return (order.flags & FLAG_MASK_IS_BUY) != FLAG_MASK_NULL;
     }
 
-    function _isDecreaseOnly(
-        Order memory order
-    )
-        private
-        pure
-        returns (bool)
-    {
+    function _isDecreaseOnly(Order memory order) private pure returns (bool) {
         return (order.flags & FLAG_MASK_IS_DECREASE_ONLY) != FLAG_MASK_NULL;
     }
 
-    function _isNegativeLimitFee(
-        Order memory order
-    )
+    function _isNegativeLimitFee(Order memory order)
         private
         pure
         returns (bool)
     {
-        return (order.flags & FLAG_MASK_IS_NEGATIVE_LIMIT_FEE) != FLAG_MASK_NULL;
+        return
+            (order.flags & FLAG_MASK_IS_NEGATIVE_LIMIT_FEE) != FLAG_MASK_NULL;
     }
 }

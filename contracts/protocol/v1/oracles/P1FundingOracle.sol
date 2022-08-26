@@ -19,16 +19,15 @@
 pragma solidity 0.5.16;
 pragma experimental ABIEncoderV2;
 
-import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
-import { Ownable } from "@openzeppelin/contracts/ownership/Ownable.sol";
-import { BaseMath } from "../../lib/BaseMath.sol";
-import { Math } from "../../lib/Math.sol";
-import { SafeCast } from "../../lib/SafeCast.sol";
-import { SignedMath } from "../../lib/SignedMath.sol";
-import { I_P1Funder } from "../intf/I_P1Funder.sol";
-import { P1IndexMath } from "../lib/P1IndexMath.sol";
-import { P1Types } from "../lib/P1Types.sol";
-
+import {SafeMath} from '@openzeppelin/contracts/math/SafeMath.sol';
+import {Ownable} from '@openzeppelin/contracts/ownership/Ownable.sol';
+import {BaseMath} from '../../lib/BaseMath.sol';
+import {Math} from '../../lib/Math.sol';
+import {SafeCast} from '../../lib/SafeCast.sol';
+import {SignedMath} from '../../lib/SignedMath.sol';
+import {I_P1Funder} from '../intf/I_P1Funder.sol';
+import {P1IndexMath} from '../lib/P1IndexMath.sol';
+import {P1Types} from '../lib/P1Types.sol';
 
 /**
  * @title P1FundingOracle
@@ -36,10 +35,7 @@ import { P1Types } from "../lib/P1Types.sol";
  *
  * @notice Oracle providing the funding rate for a perpetual market.
  */
-contract P1FundingOracle is
-    Ownable,
-    I_P1Funder
-{
+contract P1FundingOracle is Ownable, I_P1Funder {
     using BaseMath for uint256;
     using SafeCast for uint256;
     using SafeMath for uint128;
@@ -50,7 +46,7 @@ contract P1FundingOracle is
     // ============ Constants ============
 
     uint256 private constant FLAG_IS_POSITIVE = 1 << 128;
-    uint128 constant internal BASE = 10 ** 18;
+    uint128 internal constant BASE = 10**18;
 
     /**
      * @notice Bounding params constraining updates to the funding rate.
@@ -63,18 +59,15 @@ contract P1FundingOracle is
      *  This means the fastest the funding rate can go from its min to its max value, or vice versa,
      *  is in 45 minutes.
      */
-    uint128 public constant MAX_ABS_VALUE = BASE * 75 / 10000 / (8 hours);
-    uint128 public constant MAX_ABS_DIFF_PER_SECOND = MAX_ABS_VALUE * 2 / (45 minutes);
+    uint128 public constant MAX_ABS_VALUE = (BASE * 75) / 10000 / (8 hours);
+    uint128 public constant MAX_ABS_DIFF_PER_SECOND =
+        (MAX_ABS_VALUE * 2) / (45 minutes);
 
     // ============ Events ============
 
-    event LogFundingRateUpdated(
-        bytes32 fundingRate
-    );
+    event LogFundingRateUpdated(bytes32 fundingRate);
 
-    event LogFundingRateProviderSet(
-        address fundingRateProvider
-    );
+    event LogFundingRateProviderSet(address fundingRateProvider);
 
     // ============ Mutable Storage ============
 
@@ -86,11 +79,7 @@ contract P1FundingOracle is
 
     // ============ Constructor ============
 
-    constructor(
-        address fundingRateProvider
-    )
-        public
-    {
+    constructor(address fundingRateProvider) public {
         P1Types.Index memory fundingRate = P1Types.Index({
             timestamp: block.timestamp.toUint32(),
             isPositive: true,
@@ -112,15 +101,13 @@ contract P1FundingOracle is
      * @param  newRate  The intended new funding rate. Is bounded by the global constant bounds.
      * @return          The new funding rate with a timestamp of the update.
      */
-    function setFundingRate(
-        SignedMath.Int calldata newRate
-    )
+    function setFundingRate(SignedMath.Int calldata newRate)
         external
         returns (P1Types.Index memory)
     {
         require(
             msg.sender == _FUNDING_RATE_PROVIDER_,
-            "The funding rate can only be set by the funding rate provider"
+            'The funding rate can only be set by the funding rate provider'
         );
 
         SignedMath.Int memory boundedNewRate = _boundRate(newRate);
@@ -142,12 +129,7 @@ contract P1FundingOracle is
      *
      * @param  newProvider  The new provider, who will have the ability to set the funding rate.
      */
-    function setFundingRateProvider(
-        address newProvider
-    )
-        external
-        onlyOwner
-    {
+    function setFundingRateProvider(address newProvider) external onlyOwner {
         _FUNDING_RATE_PROVIDER_ = newProvider;
         emit LogFundingRateProviderSet(newProvider);
     }
@@ -162,13 +144,7 @@ contract P1FundingOracle is
      * @return            The funding amount as a unitless rate, represented as a fixed-point number
      *                    with 18 decimals.
      */
-    function getFunding(
-        uint256 timeDelta
-    )
-        public
-        view
-        returns (bool, uint256)
-    {
+    function getFunding(uint256 timeDelta) public view returns (bool, uint256) {
         // Note: Funding interest in PerpetualV1 does not compound, as the interest affects margin
         // balances but is calculated based on position balances.
         P1Types.Index memory fundingRate = _FUNDING_RATE_;
@@ -181,9 +157,7 @@ contract P1FundingOracle is
     /**
      * @dev Apply the contract-defined bounds and return the bounded rate.
      */
-    function _boundRate(
-        SignedMath.Int memory newRate
-    )
+    function _boundRate(SignedMath.Int memory newRate)
         private
         view
         returns (SignedMath.Int memory)
@@ -203,21 +177,15 @@ contract P1FundingOracle is
         if (newRate.gt(oldRate)) {
             SignedMath.Int memory upperBound = SignedMath.min(
                 oldRate.add(maxDiff),
-                SignedMath.Int({ value: MAX_ABS_VALUE, isPositive: true })
+                SignedMath.Int({value: MAX_ABS_VALUE, isPositive: true})
             );
-            return SignedMath.min(
-                newRate,
-                upperBound
-            );
+            return SignedMath.min(newRate, upperBound);
         } else {
             SignedMath.Int memory lowerBound = SignedMath.max(
                 oldRate.sub(maxDiff),
-                SignedMath.Int({ value: MAX_ABS_VALUE, isPositive: false })
+                SignedMath.Int({value: MAX_ABS_VALUE, isPositive: false})
             );
-            return SignedMath.max(
-                newRate,
-                lowerBound
-            );
+            return SignedMath.max(newRate, lowerBound);
         }
     }
 }

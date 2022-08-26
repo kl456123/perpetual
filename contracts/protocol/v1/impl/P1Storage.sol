@@ -19,10 +19,9 @@
 pragma solidity 0.5.16;
 pragma experimental ABIEncoderV2;
 
-import { Adminable } from "../../lib/Adminable.sol";
-import { ReentrancyGuard } from "../../lib/ReentrancyGuard.sol";
-import { P1Types } from "../lib/P1Types.sol";
-
+import {Adminable} from '../../lib/Adminable.sol';
+import {ReentrancyGuard} from '../../lib/ReentrancyGuard.sol';
+import {P1Types} from '../lib/P1Types.sol';
 
 /**
  * @title P1Storage
@@ -30,10 +29,7 @@ import { P1Types } from "../lib/P1Types.sol";
  *
  * @notice Storage contract. Contains or inherits from all contracts that have ordered storage.
  */
-contract P1Storage is
-    Adminable,
-    ReentrancyGuard
-{
+contract P1Storage is Adminable, ReentrancyGuard {
     mapping(address => P1Types.Balance) internal _BALANCES_;
     mapping(address => P1Types.Index) internal _LOCAL_INDEXES_;
 

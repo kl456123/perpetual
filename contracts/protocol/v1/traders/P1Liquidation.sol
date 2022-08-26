@@ -19,14 +19,13 @@
 pragma solidity 0.5.16;
 pragma experimental ABIEncoderV2;
 
-import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
-import { P1TraderConstants } from "./P1TraderConstants.sol";
-import { BaseMath } from "../../lib/BaseMath.sol";
-import { Math } from "../../lib/Math.sol";
-import { P1Getters } from "../impl/P1Getters.sol";
-import { P1BalanceMath } from "../lib/P1BalanceMath.sol";
-import { P1Types } from "../lib/P1Types.sol";
-
+import {SafeMath} from '@openzeppelin/contracts/math/SafeMath.sol';
+import {P1TraderConstants} from './P1TraderConstants.sol';
+import {BaseMath} from '../../lib/BaseMath.sol';
+import {Math} from '../../lib/Math.sol';
+import {P1Getters} from '../impl/P1Getters.sol';
+import {P1BalanceMath} from '../lib/P1BalanceMath.sol';
+import {P1Types} from '../lib/P1Types.sol';
 
 /**
  * @title P1Liquidation
@@ -34,9 +33,7 @@ import { P1Types } from "../lib/P1Types.sol";
  *
  * @notice Contract allowing accounts to be liquidated by other accounts.
  */
-contract P1Liquidation is
-    P1TraderConstants
-{
+contract P1Liquidation is P1TraderConstants {
     using SafeMath for uint256;
     using Math for uint256;
     using P1BalanceMath for P1Types.Balance;
@@ -66,11 +63,7 @@ contract P1Liquidation is
 
     // ============ Constructor ============
 
-    constructor (
-        address perpetualV1
-    )
-        public
-    {
+    constructor(address perpetualV1) public {
         _PERPETUAL_V1_ = perpetualV1;
     }
 
@@ -95,31 +88,21 @@ contract P1Liquidation is
         uint256 price,
         bytes calldata data,
         bytes32 /* traderFlags */
-    )
-        external
-        returns (P1Types.TradeResult memory)
-    {
+    ) external returns (P1Types.TradeResult memory) {
         address perpetual = _PERPETUAL_V1_;
 
-        require(
-            msg.sender == perpetual,
-            "msg.sender must be PerpetualV1"
-        );
+        require(msg.sender == perpetual, 'msg.sender must be PerpetualV1');
 
         require(
             P1Getters(perpetual).getIsGlobalOperator(sender),
-            "Sender is not a global operator"
+            'Sender is not a global operator'
         );
 
         TradeData memory tradeData = abi.decode(data, (TradeData));
-        P1Types.Balance memory makerBalance = P1Getters(perpetual).getAccountBalance(maker);
+        P1Types.Balance memory makerBalance = P1Getters(perpetual)
+            .getAccountBalance(maker);
 
-        _verifyTrade(
-            tradeData,
-            makerBalance,
-            perpetual,
-            price
-        );
+        _verifyTrade(tradeData, makerBalance, perpetual, price);
 
         // Bound the execution amount by the size of the maker position.
         uint256 amount = Math.min(tradeData.amount, makerBalance.position);
@@ -133,23 +116,21 @@ contract P1Liquidation is
                 makerBalance.position
             );
         } else {
-            marginAmount = uint256(makerBalance.margin).getFraction(amount, makerBalance.position);
+            marginAmount = uint256(makerBalance.margin).getFraction(
+                amount,
+                makerBalance.position
+            );
         }
 
-        emit LogLiquidated(
-            maker,
-            taker,
-            amount,
-            tradeData.isBuy,
-            price
-        );
+        emit LogLiquidated(maker, taker, amount, tradeData.isBuy, price);
 
-        return P1Types.TradeResult({
-            marginAmount: marginAmount,
-            positionAmount: amount,
-            isBuy: tradeData.isBuy,
-            traderFlags: TRADER_FLAG_LIQUIDATION
-        });
+        return
+            P1Types.TradeResult({
+                marginAmount: marginAmount,
+                positionAmount: amount,
+                isBuy: tradeData.isBuy,
+                traderFlags: TRADER_FLAG_LIQUIDATION
+            });
     }
 
     // ============ Helper Functions ============
@@ -159,17 +140,15 @@ contract P1Liquidation is
         P1Types.Balance memory makerBalance,
         address perpetual,
         uint256 price
-    )
-        private
-        view
-    {
+    ) private view {
         require(
             _isUndercollateralized(makerBalance, perpetual, price),
-            "Cannot liquidate since maker is not undercollateralized"
+            'Cannot liquidate since maker is not undercollateralized'
         );
         require(
-            !tradeData.allOrNothing || makerBalance.position >= tradeData.amount,
-            "allOrNothing is set and maker position is less than amount"
+            !tradeData.allOrNothing ||
+                makerBalance.position >= tradeData.amount,
+            'allOrNothing is set and maker position is less than amount'
         );
         require(
             tradeData.isBuy == makerBalance.positionIsPositive,
@@ -181,9 +160,11 @@ contract P1Liquidation is
         // This case is not handled correctly by P1Trade. If an account is in this situation, the
         // margin should first be set to zero via a deposit, then the account should be deleveraged.
         require(
-            makerBalance.marginIsPositive || makerBalance.margin == 0 ||
-                makerBalance.positionIsPositive || makerBalance.position == 0,
-            "Cannot liquidate when maker position and margin are both negative"
+            makerBalance.marginIsPositive ||
+                makerBalance.margin == 0 ||
+                makerBalance.positionIsPositive ||
+                makerBalance.position == 0,
+            'Cannot liquidate when maker position and margin are both negative'
         );
     }
 
@@ -191,13 +172,10 @@ contract P1Liquidation is
         P1Types.Balance memory balance,
         address perpetual,
         uint256 price
-    )
-        private
-        view
-        returns (bool)
-    {
+    ) private view returns (bool) {
         uint256 minCollateral = P1Getters(perpetual).getMinCollateral();
-        (uint256 positive, uint256 negative) = balance.getPositiveAndNegativeValue(price);
+        (uint256 positive, uint256 negative) = balance
+            .getPositiveAndNegativeValue(price);
 
         // See P1Settlement.sol for discussion of overflow risk.
         return positive.mul(BaseMath.base()) < negative.mul(minCollateral);

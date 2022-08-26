@@ -10,5 +10,7 @@ export function createAccountRouter(accountService: AccountService) {
     '/:address',
     accountHandler.getAccountBalance.bind(accountHandler)
   );
+
+  router.post('/drop', accountHandler.drop.bind(accountHandler));
   return router;
 }

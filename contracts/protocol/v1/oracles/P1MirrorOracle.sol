@@ -19,9 +19,8 @@
 pragma solidity 0.5.16;
 pragma experimental ABIEncoderV2;
 
-import { Ownable } from "@openzeppelin/contracts/ownership/Ownable.sol";
-import { I_MakerOracle } from "../../../external/maker/I_MakerOracle.sol";
-
+import {Ownable} from '@openzeppelin/contracts/ownership/Ownable.sol';
+import {I_MakerOracle} from '../../../external/maker/I_MakerOracle.sol';
 
 /**
  * @title P1MirrorOracle
@@ -29,30 +28,16 @@ import { I_MakerOracle } from "../../../external/maker/I_MakerOracle.sol";
  *
  * Oracle which mirrors an underlying oracle.
  */
-contract P1MirrorOracle is
-    Ownable,
-    I_MakerOracle
-{
+contract P1MirrorOracle is Ownable, I_MakerOracle {
     // ============ Events ============
 
-    event LogMedianPrice(
-        uint256 val,
-        uint256 age
-    );
+    event LogMedianPrice(uint256 val, uint256 age);
 
-    event LogSetSigner(
-        address signer,
-        bool authorized
-    );
+    event LogSetSigner(address signer, bool authorized);
 
-    event LogSetBar(
-        uint256 bar
-    );
+    event LogSetBar(uint256 bar);
 
-    event LogSetReader(
-        address reader,
-        bool authorized
-    );
+    event LogSetReader(address reader, bool authorized);
 
     // ============ Mutable Storage ============
 
@@ -66,14 +51,14 @@ contract P1MirrorOracle is
     uint256 public _BAR_;
 
     // Authorized signers. Value is equal to 0 or 1.
-    mapping (address => uint256) public _ORCL_;
+    mapping(address => uint256) public _ORCL_;
 
     // Addresses with permission to get the oracle price. Value is equal to 0 or 1.
-    mapping (address => uint256) _READERS_;
+    mapping(address => uint256) _READERS_;
 
     // Mapping for at most 256 signers.
     // Each signer is identified by the first byte of their address.
-    mapping (uint8 => address) public _SLOT_;
+    mapping(uint8 => address) public _SLOT_;
 
     // ============ Immutable Storage ============
 
@@ -82,11 +67,7 @@ contract P1MirrorOracle is
 
     // ============ Constructor ============
 
-    constructor(
-        address oracle
-    )
-        public
-    {
+    constructor(address oracle) public {
         _ORACLE_ = oracle;
     }
 
@@ -95,14 +76,10 @@ contract P1MirrorOracle is
     /**
      * @notice Returns the current price, and a boolean indicating whether the price is nonzero.
      */
-    function peek()
-        external
-        view
-        returns (bytes32, bool)
-    {
+    function peek() external view returns (bytes32, bool) {
         require(
             _READERS_[msg.sender] == 1,
-            "P1MirrorOracle#peek: Sender not authorized to get price"
+            'P1MirrorOracle#peek: Sender not authorized to get price'
         );
         uint256 val = _VAL_;
         return (bytes32(val), val > 0);
@@ -111,81 +88,48 @@ contract P1MirrorOracle is
     /**
      * @notice Requires the price to be nonzero, and returns the current price.
      */
-    function read()
-        external
-        view
-        returns (bytes32)
-    {
+    function read() external view returns (bytes32) {
         require(
             _READERS_[msg.sender] == 1,
-            "P1MirrorOracle#read: Sender not authorized to get price"
+            'P1MirrorOracle#read: Sender not authorized to get price'
         );
         uint256 val = _VAL_;
-        require(
-            val > 0,
-            "P1MirrorOracle#read: Price is zero"
-        );
+        require(val > 0, 'P1MirrorOracle#read: Price is zero');
         return bytes32(val);
     }
 
     /**
      * @notice Returns the number of signers per poke.
      */
-    function bar()
-        external
-        view
-        returns (uint256)
-    {
+    function bar() external view returns (uint256) {
         return _BAR_;
     }
 
     /**
      * @notice Returns the timetamp of the last update.
      */
-    function age()
-        external
-        view
-        returns (uint32)
-    {
+    function age() external view returns (uint32) {
         return _AGE_;
     }
 
     /**
      * @notice Returns 1 if the signer is authorized, and 0 otherwise.
      */
-    function orcl(
-        address signer
-    )
-        external
-        view
-        returns (uint256)
-    {
+    function orcl(address signer) external view returns (uint256) {
         return _ORCL_[signer];
     }
 
     /**
      * @notice Returns 1 if the address is authorized to read the oracle price, and 0 otherwise.
      */
-    function bud(
-        address reader
-    )
-        external
-        view
-        returns (uint256)
-    {
+    function bud(address reader) external view returns (uint256) {
         return _READERS_[reader];
     }
 
     /**
      * @notice A mapping from the first byte of an authorized signer's address to the signer.
      */
-    function slot(
-        uint8 signerId
-    )
-        external
-        view
-        returns (address)
-    {
+    function slot(uint8 signerId) external view returns (address) {
         return _SLOT_[signerId];
     }
 
@@ -200,7 +144,11 @@ contract P1MirrorOracle is
     function checkSynced()
         external
         view
-        returns (uint256, uint256, bool)
+        returns (
+            uint256,
+            uint256,
+            bool
+        )
     {
         uint256 signersToAdd = 0;
         uint256 signersToRemove = 0;
@@ -241,10 +189,11 @@ contract P1MirrorOracle is
         uint8[] calldata v,
         bytes32[] calldata r,
         bytes32[] calldata s
-    )
-        external
-    {
-        require(val_.length == _BAR_, "P1MirrorOracle#poke: Wrong number of messages");
+    ) external {
+        require(
+            val_.length == _BAR_,
+            'P1MirrorOracle#poke: Wrong number of messages'
+        );
 
         // Bitmap of signers, used to ensure that each message has a different signer.
         uint256 bloom = 0;
@@ -260,27 +209,24 @@ contract P1MirrorOracle is
             uint256 age_i = age_[i];
 
             // Verify that the message comes from an authorized signer.
-            address signer = recover(
-                val_i,
-                age_i,
-                v[i],
-                r[i],
-                s[i]
-            );
-            require(_ORCL_[signer] == 1, "P1MirrorOracle#poke: Invalid signer");
+            address signer = recover(val_i, age_i, v[i], r[i], s[i]);
+            require(_ORCL_[signer] == 1, 'P1MirrorOracle#poke: Invalid signer');
 
             // Verify that the message is newer than the last oracle update.
-            require(age_i > zzz, "P1MirrorOracle#poke: Stale message");
+            require(age_i > zzz, 'P1MirrorOracle#poke: Stale message');
 
             // Verify that the messages are ordered by value.
-            require(val_i >= last, "P1MirrorOracle#poke: Message out of order");
+            require(val_i >= last, 'P1MirrorOracle#poke: Message out of order');
             last = val_i;
 
             // Verify that each message has a different signer.
             // Each signer is identified by the first byte of their address.
             uint8 signerId = getSignerId(signer);
             uint256 signerBit = uint256(1) << signerId;
-            require(bloom & signerBit == 0, "P1MirrorOracle#poke: Duplicate signer");
+            require(
+                bloom & signerBit == 0,
+                'P1MirrorOracle#poke: Duplicate signer'
+            );
             bloom = bloom | signerBit;
         }
 
@@ -296,16 +242,12 @@ contract P1MirrorOracle is
     /**
      * @notice Authorize new signers. The signers must be authorized on the underlying oracle.
      */
-    function lift(
-        address[] calldata signers
-    )
-        external
-    {
+    function lift(address[] calldata signers) external {
         for (uint256 i = 0; i < signers.length; i++) {
             address signer = signers[i];
             require(
                 I_MakerOracle(_ORACLE_).orcl(signer) == 1,
-                "P1MirrorOracle#lift: Signer not authorized on underlying oracle"
+                'P1MirrorOracle#lift: Signer not authorized on underlying oracle'
             );
 
             // orcl and slot must both be empty.
@@ -314,7 +256,7 @@ contract P1MirrorOracle is
             uint8 signerId = getSignerId(signer);
             require(
                 _SLOT_[signerId] == address(0),
-                "P1MirrorOracle#lift: Signer already authorized"
+                'P1MirrorOracle#lift: Signer already authorized'
             );
 
             _ORCL_[signer] = 1;
@@ -327,23 +269,19 @@ contract P1MirrorOracle is
     /**
      * @notice Unauthorize signers. The signers must NOT be authorized on the underlying oracle.
      */
-    function drop(
-        address[] calldata signers
-    )
-        external
-    {
+    function drop(address[] calldata signers) external {
         for (uint256 i = 0; i < signers.length; i++) {
             address signer = signers[i];
             require(
                 I_MakerOracle(_ORACLE_).orcl(signer) == 0,
-                "P1MirrorOracle#drop: Signer is authorized on underlying oracle"
+                'P1MirrorOracle#drop: Signer is authorized on underlying oracle'
             );
 
             // orcl and slot must both be filled.
             // orcl is filled implies slot is filled.
             require(
                 _ORCL_[signer] != 0,
-                "P1MirrorOracle#drop: Signer is already not authorized"
+                'P1MirrorOracle#drop: Signer is already not authorized'
             );
 
             uint8 signerId = getSignerId(signer);
@@ -357,9 +295,7 @@ contract P1MirrorOracle is
     /**
      * @notice Sync `_BAR_` (the number of required signers) with the underyling oracle contract.
      */
-    function setBar()
-        external
-    {
+    function setBar() external {
         uint256 newBar = I_MakerOracle(_ORACLE_).bar();
         _BAR_ = newBar;
         emit LogSetBar(newBar);
@@ -368,36 +304,21 @@ contract P1MirrorOracle is
     /**
      * @notice Authorize an address to read the oracle price.
      */
-    function kiss(
-        address reader
-    )
-        external
-        onlyOwner
-    {
+    function kiss(address reader) external onlyOwner {
         _kiss(reader);
     }
 
     /**
      * @notice Unauthorize an address so it can no longer read the oracle price.
      */
-    function diss(
-        address reader
-    )
-        external
-        onlyOwner
-    {
+    function diss(address reader) external onlyOwner {
         _diss(reader);
     }
 
     /**
      * @notice Authorize addresses to read the oracle price.
      */
-    function kiss(
-        address[] calldata readers
-    )
-        external
-        onlyOwner
-    {
+    function kiss(address[] calldata readers) external onlyOwner {
         for (uint256 i = 0; i < readers.length; i++) {
             _kiss(readers[i]);
         }
@@ -406,12 +327,7 @@ contract P1MirrorOracle is
     /**
      * @notice Unauthorize addresses so they can no longer read the oracle price.
      */
-    function diss(
-        address[] calldata readers
-    )
-        external
-        onlyOwner
-    {
+    function diss(address[] calldata readers) external onlyOwner {
         for (uint256 i = 0; i < readers.length; i++) {
             _diss(readers[i]);
         }
@@ -419,10 +335,7 @@ contract P1MirrorOracle is
 
     // ============ Internal Functions ============
 
-    function wat()
-        internal
-        pure
-        returns (bytes32);
+    function wat() internal pure returns (bytes32);
 
     function recover(
         uint256 val_,
@@ -430,46 +343,31 @@ contract P1MirrorOracle is
         uint8 v,
         bytes32 r,
         bytes32 s
-    )
-        internal
-        pure
-        returns (address)
-    {
-        return ecrecover(
-            keccak256(
-                abi.encodePacked("\x19Ethereum Signed Message:\n32",
-                keccak256(abi.encodePacked(val_, age_, wat())))
-            ),
-            v,
-            r,
-            s
-        );
+    ) internal pure returns (address) {
+        return
+            ecrecover(
+                keccak256(
+                    abi.encodePacked(
+                        '\x19Ethereum Signed Message:\n32',
+                        keccak256(abi.encodePacked(val_, age_, wat()))
+                    )
+                ),
+                v,
+                r,
+                s
+            );
     }
 
-    function getSignerId(
-        address signer
-    )
-        internal
-        pure
-        returns (uint8)
-    {
+    function getSignerId(address signer) internal pure returns (uint8) {
         return uint8(uint256(signer) >> 152);
     }
 
-    function _kiss(
-        address reader
-    )
-        private
-    {
+    function _kiss(address reader) private {
         _READERS_[reader] = 1;
         emit LogSetReader(reader, true);
     }
 
-    function _diss(
-        address reader
-    )
-        private
-    {
+    function _diss(address reader) private {
         _READERS_[reader] = 0;
         emit LogSetReader(reader, false);
     }

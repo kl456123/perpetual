@@ -19,7 +19,6 @@
 pragma solidity 0.5.16;
 pragma experimental ABIEncoderV2;
 
-
 /**
  * @title P1TraderConstants
  * @author dYdX
@@ -27,7 +26,7 @@ pragma experimental ABIEncoderV2;
  * @notice Constants for traderFlags set by contracts implementing the I_P1Trader interface.
  */
 contract P1TraderConstants {
-    bytes32 constant internal TRADER_FLAG_ORDERS = bytes32(uint256(1));
-    bytes32 constant internal TRADER_FLAG_LIQUIDATION = bytes32(uint256(2));
-    bytes32 constant internal TRADER_FLAG_DELEVERAGING = bytes32(uint256(4));
+    bytes32 internal constant TRADER_FLAG_ORDERS = bytes32(uint256(1));
+    bytes32 internal constant TRADER_FLAG_LIQUIDATION = bytes32(uint256(2));
+    bytes32 internal constant TRADER_FLAG_DELEVERAGING = bytes32(uint256(4));
 }

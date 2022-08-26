@@ -19,13 +19,12 @@
 pragma solidity 0.5.16;
 pragma experimental ABIEncoderV2;
 
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import { P1FinalSettlement } from "./P1FinalSettlement.sol";
-import { P1Getters } from "./P1Getters.sol";
-import { P1BalanceMath } from "../lib/P1BalanceMath.sol";
-import { P1Types } from "../lib/P1Types.sol";
-
+import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
+import {P1FinalSettlement} from './P1FinalSettlement.sol';
+import {P1Getters} from './P1Getters.sol';
+import {P1BalanceMath} from '../lib/P1BalanceMath.sol';
+import {P1Types} from '../lib/P1Types.sol';
 
 /**
  * @title P1Margin
@@ -33,19 +32,12 @@ import { P1Types } from "../lib/P1Types.sol";
  *
  * @notice Contract for withdrawing and depositing.
  */
-contract P1Margin is
-    P1FinalSettlement,
-    P1Getters
-{
+contract P1Margin is P1FinalSettlement, P1Getters {
     using P1BalanceMath for P1Types.Balance;
 
     // ============ Events ============
 
-    event LogDeposit(
-        address indexed account,
-        uint256 amount,
-        bytes32 balance
-    );
+    event LogDeposit(address indexed account, uint256 amount, bytes32 balance);
 
     event LogWithdraw(
         address indexed account,
@@ -63,10 +55,7 @@ contract P1Margin is
      * @param  account  The account for which to credit the deposit.
      * @param  amount   the amount of tokens to deposit.
      */
-    function deposit(
-        address account,
-        uint256 amount
-    )
+    function deposit(address account, uint256 amount)
         external
         noFinalSettlement
         nonReentrant
@@ -84,11 +73,7 @@ contract P1Margin is
         balance.addToMargin(amount);
         _BALANCES_[account] = balance;
 
-        emit LogDeposit(
-            account,
-            amount,
-            balance.toBytes32()
-        );
+        emit LogDeposit(account, amount, balance.toBytes32());
     }
 
     /**
@@ -103,38 +88,25 @@ contract P1Margin is
         address account,
         address destination,
         uint256 amount
-    )
-        external
-        noFinalSettlement
-        nonReentrant
-    {
+    ) external noFinalSettlement nonReentrant {
         require(
             hasAccountPermissions(account, msg.sender),
-            "sender does not have permission to withdraw"
+            'sender does not have permission to withdraw'
         );
 
         P1Types.Context memory context = _loadContext();
         P1Types.Balance memory balance = _settleAccount(context, account);
 
-        SafeERC20.safeTransfer(
-            IERC20(_TOKEN_),
-            destination,
-            amount
-        );
+        SafeERC20.safeTransfer(IERC20(_TOKEN_), destination, amount);
 
         balance.subFromMargin(amount);
         _BALANCES_[account] = balance;
 
         require(
             _isCollateralized(context, balance),
-            "account not collateralized"
+            'account not collateralized'
         );
 
-        emit LogWithdraw(
-            account,
-            destination,
-            amount,
-            balance.toBytes32()
-        );
+        emit LogWithdraw(account, destination, amount, balance.toBytes32());
     }
 }

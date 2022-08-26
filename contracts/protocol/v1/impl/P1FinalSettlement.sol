@@ -19,15 +19,14 @@
 pragma solidity 0.5.16;
 pragma experimental ABIEncoderV2;
 
-import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import { P1Settlement } from "./P1Settlement.sol";
-import { BaseMath } from "../../lib/BaseMath.sol";
-import { Math } from "../../lib/Math.sol";
-import { P1BalanceMath } from "../lib/P1BalanceMath.sol";
-import { P1Types } from "../lib/P1Types.sol";
-
+import {SafeMath} from '@openzeppelin/contracts/math/SafeMath.sol';
+import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
+import {P1Settlement} from './P1Settlement.sol';
+import {BaseMath} from '../../lib/BaseMath.sol';
+import {Math} from '../../lib/Math.sol';
+import {P1BalanceMath} from '../lib/P1BalanceMath.sol';
+import {P1Types} from '../lib/P1Types.sol';
 
 /**
  * @title P1FinalSettlement
@@ -35,9 +34,7 @@ import { P1Types } from "../lib/P1Types.sol";
  *
  * @notice Functions regulating the smart contract's behavior during final settlement.
  */
-contract P1FinalSettlement is
-    P1Settlement
-{
+contract P1FinalSettlement is P1Settlement {
     using SafeMath for uint256;
 
     // ============ Events ============
@@ -51,23 +48,23 @@ contract P1FinalSettlement is
     // ============ Modifiers ============
 
     /**
-    * @dev Modifier to ensure the function is not run after final settlement has been enabled.
-    */
+     * @dev Modifier to ensure the function is not run after final settlement has been enabled.
+     */
     modifier noFinalSettlement() {
         require(
             !_FINAL_SETTLEMENT_ENABLED_,
-            "Not permitted during final settlement"
+            'Not permitted during final settlement'
         );
         _;
     }
 
     /**
-    * @dev Modifier to ensure the function is only run after final settlement has been enabled.
-    */
+     * @dev Modifier to ensure the function is only run after final settlement has been enabled.
+     */
     modifier onlyFinalSettlement() {
         require(
             _FINAL_SETTLEMENT_ENABLED_,
-            "Only permitted during final settlement"
+            'Only permitted during final settlement'
         );
         _;
     }
@@ -96,10 +93,8 @@ contract P1FinalSettlement is
 
         // Determine the account net value.
         // `positive` and `negative` are base values with extra precision.
-        (uint256 positive, uint256 negative) = P1BalanceMath.getPositiveAndNegativeValue(
-            balance,
-            context.price
-        );
+        (uint256 positive, uint256 negative) = P1BalanceMath
+            .getPositiveAndNegativeValue(balance, context.price);
 
         // No amount is withdrawable.
         if (positive < negative) {
@@ -116,7 +111,9 @@ contract P1FinalSettlement is
         uint256 amountToWithdraw = Math.min(contractBalance, accountValue);
 
         // Update the user's balance.
-        uint120 remainingMargin = accountValue.sub(amountToWithdraw).toUint120();
+        uint120 remainingMargin = accountValue
+            .sub(amountToWithdraw)
+            .toUint120();
         balance = P1Types.Balance({
             marginIsPositive: remainingMargin != 0,
             positionIsPositive: false,
@@ -126,11 +123,7 @@ contract P1FinalSettlement is
         _BALANCES_[msg.sender] = balance;
 
         // Send the tokens.
-        SafeERC20.safeTransfer(
-            IERC20(_TOKEN_),
-            msg.sender,
-            amountToWithdraw
-        );
+        SafeERC20.safeTransfer(IERC20(_TOKEN_), msg.sender, amountToWithdraw);
 
         // Emit the log.
         emit LogWithdrawFinalSettlement(

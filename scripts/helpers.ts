@@ -1,4 +1,5 @@
 import { ethers } from 'hardhat';
+import { DEPLOYER_ACCOUNT, DELEVERAGING_ACCOUNT } from '../src/config';
 
 export enum Network {
   Ethereum = 1,
@@ -11,14 +12,14 @@ export enum Network {
 
 export function getDeployerAddress(network: Network) {
   // if (network === Network.Ethereum || network===Network.Goerli) {
-  return process.env.DEPLOYER_ACCOUNT as string;
+  return DEPLOYER_ACCOUNT;
   // }
   // throw new Error('Cannot find Deployer address');
 }
 
 export function getDeleveragingOperatorAddress(network: Network) {
   // if (network === Network.Ethereum || network===Network.Goerli) {
-  return process.env.DELEVERAGING_ACCOUNT as string; // TODO
+  return DELEVERAGING_ACCOUNT; // TODO
   // }
 
   // throw new Error('Cannot find funding rate provider address');
@@ -30,7 +31,7 @@ function getFundingRateProviderAddress(network: Network) {
   // }
 
   // if(network===Network.Goerli){
-  return process.env.DEPLOYER_ACCOUNT as string;
+  return DEPLOYER_ACCOUNT as string;
   // }
   // throw new Error('Cannot find funding rate provider address');
 }
@@ -60,7 +61,7 @@ function getInsuranceFundAddress(network: Network) {
   // }
 
   // if(network===Network.Goerli){
-  return process.env.DEPLOYER_ACCOUNT as string;
+  return DEPLOYER_ACCOUNT as string;
   // }
   // throw new Error('Cannot find insurance fund address');
 }

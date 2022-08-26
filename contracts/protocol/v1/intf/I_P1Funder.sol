@@ -19,7 +19,6 @@
 pragma solidity 0.5.16;
 pragma experimental ABIEncoderV2;
 
-
 /**
  * @title I_P1Funder
  * @author dYdX
@@ -27,7 +26,6 @@ pragma experimental ABIEncoderV2;
  * @notice Interface for an oracle providing the funding rate for a perpetual market.
  */
 interface I_P1Funder {
-
     /**
      * @notice Calculates the signed funding amount that has accumulated over a period of time.
      *
@@ -36,9 +34,7 @@ interface I_P1Funder {
      * @return            The funding amount as a unitless rate, represented as a fixed-point number
      *                    with 18 decimals.
      */
-    function getFunding(
-        uint256 timeDelta
-    )
+    function getFunding(uint256 timeDelta)
         external
         view
         returns (bool, uint256);

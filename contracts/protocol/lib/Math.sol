@@ -19,8 +19,7 @@
 pragma solidity 0.5.16;
 pragma experimental ABIEncoderV2;
 
-import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
-
+import {SafeMath} from '@openzeppelin/contracts/math/SafeMath.sol';
 
 /**
  * @title Math
@@ -40,11 +39,7 @@ library Math {
         uint256 target,
         uint256 numerator,
         uint256 denominator
-    )
-        internal
-        pure
-        returns (uint256)
-    {
+    ) internal pure returns (uint256) {
         return target.mul(numerator).div(denominator);
     }
 
@@ -55,11 +50,7 @@ library Math {
         uint256 target,
         uint256 numerator,
         uint256 denominator
-    )
-        internal
-        pure
-        returns (uint256)
-    {
+    ) internal pure returns (uint256) {
         if (target == 0 || numerator == 0) {
             // SafeMath will check for zero denominator
             return SafeMath.div(0, denominator);
@@ -70,28 +61,14 @@ library Math {
     /**
      * @dev Returns the minimum between a and b.
      */
-    function min(
-        uint256 a,
-        uint256 b
-    )
-        internal
-        pure
-        returns (uint256)
-    {
+    function min(uint256 a, uint256 b) internal pure returns (uint256) {
         return a < b ? a : b;
     }
 
     /**
      * @dev Returns the maximum between a and b.
      */
-    function max(
-        uint256 a,
-        uint256 b
-    )
-        internal
-        pure
-        returns (uint256)
-    {
+    function max(uint256 a, uint256 b) internal pure returns (uint256) {
         return a > b ? a : b;
     }
 }

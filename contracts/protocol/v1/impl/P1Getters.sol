@@ -19,10 +19,9 @@
 pragma solidity 0.5.16;
 pragma experimental ABIEncoderV2;
 
-import { P1Storage } from "./P1Storage.sol";
-import { I_P1Oracle } from "../intf/I_P1Oracle.sol";
-import { P1Types } from "../lib/P1Types.sol";
-
+import {P1Storage} from './P1Storage.sol';
+import {I_P1Oracle} from '../intf/I_P1Oracle.sol';
+import {P1Types} from '../lib/P1Types.sol';
 
 /**
  * @title P1Getters
@@ -30,9 +29,7 @@ import { P1Types } from "../lib/P1Types.sol";
  *
  * @notice Contract for read-only getters.
  */
-contract P1Getters is
-    P1Storage
-{
+contract P1Getters is P1Storage {
     // ============ Account Getters ============
 
     /**
@@ -41,9 +38,7 @@ contract P1Getters is
      * @param  account  The address of the account to query the balances of.
      * @return          The balances of the account.
      */
-    function getAccountBalance(
-        address account
-    )
+    function getAccountBalance(address account)
         external
         view
         returns (P1Types.Balance memory)
@@ -57,9 +52,7 @@ contract P1Getters is
      * @param  account  The address of the account to query the index of.
      * @return          The index of the account.
      */
-    function getAccountIndex(
-        address account
-    )
+    function getAccountIndex(address account)
         external
         view
         returns (P1Types.Index memory)
@@ -74,10 +67,7 @@ contract P1Getters is
      * @param  operator  The address of the operator to query the status of.
      * @return           True if the operator is a local operator of the account, false otherwise.
      */
-    function getIsLocalOperator(
-        address account,
-        address operator
-    )
+    function getIsLocalOperator(address account, address operator)
         external
         view
         returns (bool)
@@ -93,9 +83,7 @@ contract P1Getters is
      * @param  operator  The address of the operator to query the status of.
      * @return           True if the address is a global operator, false otherwise.
      */
-    function getIsGlobalOperator(
-        address operator
-    )
+    function getIsGlobalOperator(address operator)
         external
         view
         returns (bool)
@@ -108,11 +96,7 @@ contract P1Getters is
      *
      * @return The address of the ERC20 token.
      */
-    function getTokenContract()
-        external
-        view
-        returns (address)
-    {
+    function getTokenContract() external view returns (address) {
         return _TOKEN_;
     }
 
@@ -121,11 +105,7 @@ contract P1Getters is
      *
      * @return The address of the price oracle contract.
      */
-    function getOracleContract()
-        external
-        view
-        returns (address)
-    {
+    function getOracleContract() external view returns (address) {
         return _ORACLE_;
     }
 
@@ -134,11 +114,7 @@ contract P1Getters is
      *
      * @return The address of the funder contract.
      */
-    function getFunderContract()
-        external
-        view
-        returns (address)
-    {
+    function getFunderContract() external view returns (address) {
         return _FUNDER_;
     }
 
@@ -147,11 +123,7 @@ contract P1Getters is
      *
      * @return The most recently cached global index.
      */
-    function getGlobalIndex()
-        external
-        view
-        returns (P1Types.Index memory)
-    {
+    function getGlobalIndex() external view returns (P1Types.Index memory) {
         return _GLOBAL_INDEX_;
     }
 
@@ -161,11 +133,7 @@ contract P1Getters is
      * @return The minimum-acceptable collateralization ratio, returned as a fixed-point number with
      *  18 decimals of precision.
      */
-    function getMinCollateral()
-        external
-        view
-        returns (uint256)
-    {
+    function getMinCollateral() external view returns (uint256) {
         return _MIN_COLLATERAL_;
     }
 
@@ -174,11 +142,7 @@ contract P1Getters is
      *
      * @return True if final-settlement was enabled, false otherwise.
      */
-    function getFinalSettlementEnabled()
-        external
-        view
-        returns (bool)
-    {
+    function getFinalSettlementEnabled() external view returns (bool) {
         return _FINAL_SETTLEMENT_ENABLED_;
     }
 
@@ -190,14 +154,10 @@ contract P1Getters is
      *
      * @return The price returned by the current price oracle.
      */
-    function getOraclePrice()
-        external
-        view
-        returns (uint256)
-    {
+    function getOraclePrice() external view returns (uint256) {
         require(
             _GLOBAL_OPERATORS_[msg.sender],
-            "Oracle price requester not global operator"
+            'Oracle price requester not global operator'
         );
         return I_P1Oracle(_ORACLE_).getPrice();
     }
@@ -212,16 +172,14 @@ contract P1Getters is
      * @return           True if the operator has permission to operate the account,
      *                   and false otherwise.
      */
-    function hasAccountPermissions(
-        address account,
-        address operator
-    )
+    function hasAccountPermissions(address account, address operator)
         public
         view
         returns (bool)
     {
-        return account == operator
-            || _GLOBAL_OPERATORS_[operator]
-            || _LOCAL_OPERATORS_[account][operator];
+        return
+            account == operator ||
+            _GLOBAL_OPERATORS_[operator] ||
+            _LOCAL_OPERATORS_[account][operator];
     }
 }

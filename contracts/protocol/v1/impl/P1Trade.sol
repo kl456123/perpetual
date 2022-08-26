@@ -19,15 +19,15 @@
 pragma solidity 0.5.16;
 pragma experimental ABIEncoderV2;
 
-import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
-import { P1FinalSettlement } from "./P1FinalSettlement.sol";
-import { BaseMath } from "../../lib/BaseMath.sol";
-import { Require } from "../../lib/Require.sol";
-import { I_P1Trader } from "../intf/I_P1Trader.sol";
-import { P1BalanceMath } from "../lib/P1BalanceMath.sol";
-import { P1Types } from "../lib/P1Types.sol";
-// import "hardhat/console.sol";
+import {SafeMath} from '@openzeppelin/contracts/math/SafeMath.sol';
+import {P1FinalSettlement} from './P1FinalSettlement.sol';
+import {BaseMath} from '../../lib/BaseMath.sol';
+import {Require} from '../../lib/Require.sol';
+import {I_P1Trader} from '../intf/I_P1Trader.sol';
+import {P1BalanceMath} from '../lib/P1BalanceMath.sol';
+import {P1Types} from '../lib/P1Types.sol';
 
+// import "hardhat/console.sol";
 
 /**
  * @title P1Trade
@@ -37,9 +37,7 @@ import { P1Types } from "../lib/P1Types.sol";
  *  to any approved transfer of balances, as determined by the smart contracts implementing the
  *  I_P1Trader interface and approved as global operators on the PerpetualV1 contract.
  */
-contract P1Trade is
-    P1FinalSettlement
-{
+contract P1Trade is P1FinalSettlement {
     using SafeMath for uint120;
     using P1BalanceMath for P1Types.Balance;
 
@@ -75,18 +73,20 @@ contract P1Trade is
      * @param  accounts  The sorted list of accounts that are involved in trades.
      * @param  trades    The list of trades to execute in-order.
      */
-    function trade(
-        address[] memory accounts,
-        TradeArg[] memory trades
-    )
+    function trade(address[] memory accounts, TradeArg[] memory trades)
         public
         noFinalSettlement
         nonReentrant
     {
         _verifyAccounts(accounts);
         P1Types.Context memory context = _loadContext();
-        P1Types.Balance[] memory initialBalances = _settleAccounts(context, accounts);
-        P1Types.Balance[] memory currentBalances = new P1Types.Balance[](initialBalances.length);
+        P1Types.Balance[] memory initialBalances = _settleAccounts(
+            context,
+            accounts
+        );
+        P1Types.Balance[] memory currentBalances = new P1Types.Balance[](
+            initialBalances.length
+        );
 
         uint256 i;
         for (i = 0; i < initialBalances.length; i++) {
@@ -99,20 +99,21 @@ contract P1Trade is
 
             require(
                 _GLOBAL_OPERATORS_[tradeArg.trader],
-                "trader is not global operator"
+                'trader is not global operator'
             );
 
             address maker = accounts[tradeArg.makerIndex];
             address taker = accounts[tradeArg.takerIndex];
 
-            P1Types.TradeResult memory tradeResult = I_P1Trader(tradeArg.trader).trade(
-                msg.sender,
-                maker,
-                taker,
-                context.price,
-                tradeArg.data,
-                traderFlags
-            );
+            P1Types.TradeResult memory tradeResult = I_P1Trader(tradeArg.trader)
+                .trade(
+                    msg.sender,
+                    maker,
+                    taker,
+                    context.price,
+                    tradeArg.data,
+                    traderFlags
+                );
 
             traderFlags |= tradeResult.traderFlags;
 
@@ -122,8 +123,12 @@ contract P1Trade is
             }
 
             // Modify currentBalances in-place. Note that `isBuy` is from the taker's perspective.
-            P1Types.Balance memory makerBalance = currentBalances[tradeArg.makerIndex];
-            P1Types.Balance memory takerBalance = currentBalances[tradeArg.takerIndex];
+            P1Types.Balance memory makerBalance = currentBalances[
+                tradeArg.makerIndex
+            ];
+            P1Types.Balance memory takerBalance = currentBalances[
+                tradeArg.takerIndex
+            ];
             if (tradeResult.isBuy) {
                 makerBalance.addToMargin(tradeResult.marginAmount);
                 makerBalance.subFromPosition(tradeResult.positionAmount);
@@ -170,16 +175,8 @@ contract P1Trade is
      * @dev Verify that `accounts` contains at least one address and that the contents are unique.
      *  We verify uniqueness by requiring that the array is sorted.
      */
-    function _verifyAccounts(
-        address[] memory accounts
-    )
-        private
-        pure
-    {
-        require(
-            accounts.length > 0,
-            "Accounts must have non-zero length"
-        );
+    function _verifyAccounts(address[] memory accounts) private pure {
+        require(accounts.length > 0, 'Accounts must have non-zero length');
 
         // Check that accounts are unique
         address prevAccount = accounts[0];
@@ -187,7 +184,7 @@ contract P1Trade is
             address account = accounts[i];
             require(
                 account > prevAccount,
-                "Accounts must be sorted and unique"
+                'Accounts must be sorted and unique'
             );
             prevAccount = account;
         }
@@ -208,18 +205,15 @@ contract P1Trade is
         address[] memory accounts,
         P1Types.Balance[] memory initialBalances,
         P1Types.Balance[] memory currentBalances
-    )
-        private
-        pure
-    {
+    ) private pure {
         for (uint256 i = 0; i < accounts.length; i++) {
             P1Types.Balance memory currentBalance = currentBalances[i];
-            (uint256 currentPos, uint256 currentNeg) =
-                currentBalance.getPositiveAndNegativeValue(context.price);
+            (uint256 currentPos, uint256 currentNeg) = currentBalance
+                .getPositiveAndNegativeValue(context.price);
 
             // See P1Settlement._isCollateralized().
-            bool isCollateralized =
-                currentPos.mul(BaseMath.base()) >= currentNeg.mul(context.minCollateral);
+            bool isCollateralized = currentPos.mul(BaseMath.base()) >=
+                currentNeg.mul(context.minCollateral);
 
             if (isCollateralized) {
                 continue;
@@ -227,17 +221,17 @@ contract P1Trade is
 
             address account = accounts[i];
             P1Types.Balance memory initialBalance = initialBalances[i];
-            (uint256 initialPos, uint256 initialNeg) =
-                initialBalance.getPositiveAndNegativeValue(context.price);
+            (uint256 initialPos, uint256 initialNeg) = initialBalance
+                .getPositiveAndNegativeValue(context.price);
 
             Require.that(
                 currentPos != 0,
-                "account is undercollateralized and has no positive value",
+                'account is undercollateralized and has no positive value',
                 account
             );
             Require.that(
                 currentBalance.position <= initialBalance.position,
-                "account is undercollateralized and absolute position size increased",
+                'account is undercollateralized and absolute position size increased',
                 account
             );
 
@@ -245,13 +239,14 @@ contract P1Trade is
             // either currentPos is zero or the account is well-collateralized.
 
             Require.that(
-                currentBalance.positionIsPositive == initialBalance.positionIsPositive,
-                "account is undercollateralized and position changed signs",
+                currentBalance.positionIsPositive ==
+                    initialBalance.positionIsPositive,
+                'account is undercollateralized and position changed signs',
                 account
             );
             Require.that(
                 initialNeg != 0,
-                "account is undercollateralized and was not previously",
+                'account is undercollateralized and was not previously',
                 account
             );
 
@@ -273,9 +268,11 @@ contract P1Trade is
             // without any rounding. This is important to avoid the possibility of overflow.
             Require.that(
                 currentBalance.positionIsPositive
-                    ? currentNeg.baseDivMul(initialPos) <= initialNeg.baseDivMul(currentPos)
-                    : initialPos.baseDivMul(currentNeg) <= currentPos.baseDivMul(initialNeg),
-                "account is undercollateralized and collateralization decreased",
+                    ? currentNeg.baseDivMul(initialPos) <=
+                        initialNeg.baseDivMul(currentPos)
+                    : initialPos.baseDivMul(currentNeg) <=
+                        currentPos.baseDivMul(initialNeg),
+                'account is undercollateralized and collateralization decreased',
                 account
             );
         }
