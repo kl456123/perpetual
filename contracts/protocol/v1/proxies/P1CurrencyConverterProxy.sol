@@ -19,11 +19,10 @@
 pragma solidity 0.5.16;
 pragma experimental ABIEncoderV2;
 
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import { I_ExchangeWrapper } from "../../../external/I_ExchangeWrapper.sol";
-import { I_PerpetualV1 } from "../intf/I_PerpetualV1.sol";
-
+import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
+import {I_ExchangeWrapper} from '../../../external/I_ExchangeWrapper.sol';
+import {I_PerpetualV1} from '../intf/I_PerpetualV1.sol';
 
 /**
  * @title P1CurrencyConverterProxy
@@ -66,12 +65,10 @@ contract P1CurrencyConverterProxy {
      *  on a given Perpetual before deposits can be made.
      * @dev Cannot be run in the constructor due to technical restrictions in Solidity.
      */
-    function approveMaximumOnPerpetual(
-        address perpetual
-    )
-        external
-    {
-        IERC20 tokenContract = IERC20(I_PerpetualV1(perpetual).getTokenContract());
+    function approveMaximumOnPerpetual(address perpetual) external {
+        IERC20 tokenContract = IERC20(
+            I_PerpetualV1(perpetual).getTokenContract()
+        );
 
         // safeApprove requires unsetting the allowance first.
         tokenContract.safeApprove(perpetual, 0);
@@ -99,10 +96,7 @@ contract P1CurrencyConverterProxy {
         address tokenFrom,
         uint256 tokenFromAmount,
         bytes calldata data
-    )
-        external
-        returns (uint256)
-    {
+    ) external returns (uint256) {
         I_PerpetualV1 perpetualContract = I_PerpetualV1(perpetual);
         address tokenTo = perpetualContract.getTokenContract();
         address self = address(this);
@@ -117,7 +111,9 @@ contract P1CurrencyConverterProxy {
         );
 
         // Convert fromToken to toToken on the ExchangeWrapper.
-        I_ExchangeWrapper exchangeWrapperContract = I_ExchangeWrapper(exchangeWrapper);
+        I_ExchangeWrapper exchangeWrapperContract = I_ExchangeWrapper(
+            exchangeWrapper
+        );
         uint256 tokenToAmount = exchangeWrapperContract.exchange(
             msg.sender,
             self,
@@ -128,17 +124,10 @@ contract P1CurrencyConverterProxy {
         );
 
         // Receive toToken from the ExchangeWrapper.
-        IERC20(tokenTo).safeTransferFrom(
-            exchangeWrapper,
-            self,
-            tokenToAmount
-        );
+        IERC20(tokenTo).safeTransferFrom(exchangeWrapper, self, tokenToAmount);
 
         // Deposit toToken to the Perpetual.
-        perpetualContract.deposit(
-            account,
-            tokenToAmount
-        );
+        perpetualContract.deposit(account, tokenToAmount);
 
         // Log the result.
         emit LogConvertedDeposit(
@@ -176,29 +165,25 @@ contract P1CurrencyConverterProxy {
         address tokenTo,
         uint256 tokenFromAmount,
         bytes calldata data
-    )
-        external
-        returns (uint256)
-    {
+    ) external returns (uint256) {
         I_PerpetualV1 perpetualContract = I_PerpetualV1(perpetual);
         address tokenFrom = perpetualContract.getTokenContract();
         address self = address(this);
 
         // Verify that the sender has permission to withdraw from the account.
         require(
-            account == msg.sender || perpetualContract.hasAccountPermissions(account, msg.sender),
-            "msg.sender cannot operate the account"
+            account == msg.sender ||
+                perpetualContract.hasAccountPermissions(account, msg.sender),
+            'msg.sender cannot operate the account'
         );
 
         // Withdraw fromToken from the Perpetual.
-        perpetualContract.withdraw(
-            account,
-            exchangeWrapper,
-            tokenFromAmount
-        );
+        perpetualContract.withdraw(account, exchangeWrapper, tokenFromAmount);
 
         // Convert fromToken to toToken on the ExchangeWrapper.
-        I_ExchangeWrapper exchangeWrapperContract = I_ExchangeWrapper(exchangeWrapper);
+        I_ExchangeWrapper exchangeWrapperContract = I_ExchangeWrapper(
+            exchangeWrapper
+        );
         uint256 tokenToAmount = exchangeWrapperContract.exchange(
             msg.sender,
             self,

@@ -25,6 +25,7 @@
     "hardhat": "^2.10.1",
     "hardhat-gas-reporter": "^1.0.8",
     "prettier": "^2.6.2",
+    "prettier-plugin-solidity": "^1.0.0-beta.24",
     "solidity-coverage": "^0.7.21",
     "ts-node": "10.7.0",
     "typechain": "^8.1.0",
@@ -47,7 +48,7 @@
     "ws": "^8.8.1"
   },
   "scripts": {
-    "prettier": "prettier --write \"**/*.{js,json,md,ts}\"",
+    "prettier": "prettier --write \"**/*.{js,json,md,ts,sol}\"",
     "lint": "eslint --config ./.eslintrc.json --ignore-path ./.eslintignore --ext .js,.ts . --fix",
     "fix": "yarn prettier && yarn lint",
     "start": "ts-node src/index.ts",

@@ -9,6 +9,10 @@ import { objectETHAddressNormalizer } from '../utils';
 export async function addressNormalizer(ctx: Context, next: Next) {
   const normalizedQuery = objectETHAddressNormalizer(ctx.query);
   ctx.query = normalizedQuery;
+  if (typeof ctx.request.body === 'object') {
+    const normalizedBody = objectETHAddressNormalizer(ctx.request.body);
+    ctx.request.body = normalizedBody;
+  }
 
   await next();
 }

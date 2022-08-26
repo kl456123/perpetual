@@ -19,10 +19,9 @@
 pragma solidity 0.5.16;
 pragma experimental ABIEncoderV2;
 
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import { I_PerpetualV1 } from "../intf/I_PerpetualV1.sol";
-
+import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
+import {I_PerpetualV1} from '../intf/I_PerpetualV1.sol';
 
 /**
  * @title P1Proxy
@@ -39,12 +38,10 @@ contract P1Proxy {
      *  on a given Perpetual before deposits can be made.
      * @dev Cannot be run in the constructor due to technical restrictions in Solidity.
      */
-    function approveMaximumOnPerpetual(
-        address perpetual
-    )
-        external
-    {
-        IERC20 tokenContract = IERC20(I_PerpetualV1(perpetual).getTokenContract());
+    function approveMaximumOnPerpetual(address perpetual) external {
+        IERC20 tokenContract = IERC20(
+            I_PerpetualV1(perpetual).getTokenContract()
+        );
 
         // safeApprove requires unsetting the allowance first.
         tokenContract.safeApprove(perpetual, 0);

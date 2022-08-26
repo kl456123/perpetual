@@ -19,7 +19,6 @@
 pragma solidity 0.5.16;
 pragma experimental ABIEncoderV2;
 
-
 /**
  * @title I_Solo
  * @author dYdX
@@ -27,24 +26,23 @@ pragma experimental ABIEncoderV2;
  * Interface for calling the Solo margin smart contract.
  */
 interface I_Solo {
-
     // ============ Enums ============
 
     enum ActionType {
-        Deposit,   // supply tokens
-        Withdraw,  // borrow tokens
-        Transfer,  // transfer balance between accounts
-        Buy,       // buy an amount of some token (externally)
-        Sell,      // sell an amount of some token (externally)
-        Trade,     // trade tokens against another account
+        Deposit, // supply tokens
+        Withdraw, // borrow tokens
+        Transfer, // transfer balance between accounts
+        Buy, // buy an amount of some token (externally)
+        Sell, // sell an amount of some token (externally)
+        Trade, // trade tokens against another account
         Liquidate, // liquidate an undercollateralized or expiring account
-        Vaporize,  // use excess tokens to zero-out a completely negative account
-        Call       // send arbitrary data to an address
+        Vaporize, // use excess tokens to zero-out a completely negative account
+        Call // send arbitrary data to an address
     }
 
     enum AssetDenomination {
         Wei, // the amount is denominated in wei
-        Par  // the amount is denominated in par
+        Par // the amount is denominated in par
     }
 
     enum AssetReference {
@@ -58,7 +56,7 @@ interface I_Solo {
      * Represents the unique key that specifies an account
      */
     struct AccountInfo {
-        address owner;  // The address that owns the account
+        address owner; // The address that owns the account
         uint256 number; // A nonce that allows a single address to control many accounts
     }
 
@@ -96,10 +94,7 @@ interface I_Solo {
      * @param  operator  The possible operator
      * @return           True if operator is approved for owner's accounts
      */
-    function getIsLocalOperator(
-        address owner,
-        address operator
-    )
+    function getIsLocalOperator(address owner, address operator)
         external
         view
         returns (bool);
@@ -111,12 +106,7 @@ interface I_Solo {
      * @param  operator  The address to query
      * @return           True if operator is a global operator
      */
-    function getIsGlobalOperator(
-        address operator
-    )
-        external
-        view
-        returns (bool);
+    function getIsGlobalOperator(address operator) external view returns (bool);
 
     /**
      * @notice Get the ERC20 token address for a market.
@@ -124,9 +114,7 @@ interface I_Solo {
      * @param  marketId  The market to query
      * @return           The token address
      */
-    function getMarketTokenAddress(
-        uint256 marketId
-    )
+    function getMarketTokenAddress(uint256 marketId)
         external
         view
         returns (address);
@@ -149,6 +137,5 @@ interface I_Solo {
     function operate(
         AccountInfo[] calldata accounts,
         ActionArgs[] calldata actions
-    )
-        external;
+    ) external;
 }

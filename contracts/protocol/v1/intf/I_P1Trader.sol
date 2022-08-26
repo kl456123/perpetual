@@ -19,8 +19,7 @@
 pragma solidity 0.5.16;
 pragma experimental ABIEncoderV2;
 
-import { P1Types } from "../lib/P1Types.sol";
-
+import {P1Types} from '../lib/P1Types.sol';
 
 /**
  * @title I_P1Trader
@@ -29,7 +28,6 @@ import { P1Types } from "../lib/P1Types.sol";
  * @notice Interface that PerpetualV1 Traders must implement.
  */
 interface I_P1Trader {
-
     /**
      * @notice Returns the result of the trade between the maker and the taker. Expected to be
      *  called by PerpetualV1. Reverts if the trade is disallowed.
@@ -50,7 +48,5 @@ interface I_P1Trader {
         uint256 price,
         bytes calldata data,
         bytes32 traderFlags
-    )
-        external
-        returns (P1Types.TradeResult memory);
+    ) external returns (P1Types.TradeResult memory);
 }

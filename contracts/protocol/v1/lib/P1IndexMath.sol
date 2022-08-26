@@ -19,8 +19,7 @@
 pragma solidity 0.5.16;
 pragma experimental ABIEncoderV2;
 
-import { P1Types } from "./P1Types.sol";
-
+import {P1Types} from './P1Types.sol';
 
 /**
  * @title P1IndexMath
@@ -29,7 +28,6 @@ import { P1Types } from "./P1Types.sol";
  * @dev Library for manipulating P1Types.Index structs.
  */
 library P1IndexMath {
-
     // ============ Constants ============
 
     uint256 private constant FLAG_IS_POSITIVE = 1 << (8 * 16);
@@ -39,17 +37,14 @@ library P1IndexMath {
     /**
      * @dev Returns a compressed bytes32 representation of the index for logging.
      */
-    function toBytes32(
-        P1Types.Index memory index
-    )
+    function toBytes32(P1Types.Index memory index)
         internal
         pure
         returns (bytes32)
     {
-        uint256 result =
-            index.value
-            | (index.isPositive ? FLAG_IS_POSITIVE : 0)
-            | (uint256(index.timestamp) << 136);
+        uint256 result = index.value |
+            (index.isPositive ? FLAG_IS_POSITIVE : 0) |
+            (uint256(index.timestamp) << 136);
         return bytes32(result);
     }
 }

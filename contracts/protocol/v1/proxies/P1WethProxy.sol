@@ -19,11 +19,10 @@
 pragma solidity 0.5.16;
 pragma experimental ABIEncoderV2;
 
-import { WETH9 } from "canonical-weth/contracts/WETH9.sol";
-import { P1Proxy } from "./P1Proxy.sol";
-import { ReentrancyGuard } from "../../lib/ReentrancyGuard.sol";
-import { I_PerpetualV1 } from "../intf/I_PerpetualV1.sol";
-
+import {WETH9} from 'canonical-weth/contracts/WETH9.sol';
+import {P1Proxy} from './P1Proxy.sol';
+import {ReentrancyGuard} from '../../lib/ReentrancyGuard.sol';
+import {I_PerpetualV1} from '../intf/I_PerpetualV1.sol';
 
 /**
  * @title P1WethProxy
@@ -32,21 +31,14 @@ import { I_PerpetualV1 } from "../intf/I_PerpetualV1.sol";
  * @notice A proxy for depositing and withdrawing ETH to/from a Perpetual contract that uses WETH as
  *  its margin token. The ETH will be wrapper and unwrapped by the proxy.
  */
-contract P1WethProxy is
-    P1Proxy,
-    ReentrancyGuard
-{
+contract P1WethProxy is P1Proxy, ReentrancyGuard {
     // ============ Storage ============
 
     WETH9 public _WETH_;
 
     // ============ Constructor ============
 
-    constructor (
-        address payable weth
-    )
-        public
-    {
+    constructor(address payable weth) public {
         _WETH_ = WETH9(weth);
     }
 
@@ -56,14 +48,8 @@ contract P1WethProxy is
      * Fallback function. Disallows ether to be sent to this contract without data except when
      * unwrapping WETH.
      */
-    function ()
-        external
-        payable
-    {
-        require(
-            msg.sender == address(_WETH_),
-            "Cannot receive ETH"
-        );
+    function() external payable {
+        require(msg.sender == address(_WETH_), 'Cannot receive ETH');
     }
 
     /**
@@ -73,10 +59,7 @@ contract P1WethProxy is
      * @param  perpetual  Address of the Perpetual contract to deposit to.
      * @param  account    The account on the Perpetual for which to credit the deposit.
      */
-    function depositEth(
-        address perpetual,
-        address account
-    )
+    function depositEth(address perpetual, address account)
         external
         payable
         nonReentrant
@@ -85,7 +68,7 @@ contract P1WethProxy is
         address marginToken = I_PerpetualV1(perpetual).getTokenContract();
         require(
             marginToken == address(weth),
-            "The perpetual does not use WETH for margin deposits"
+            'The perpetual does not use WETH for margin deposits'
         );
 
         // Wrap ETH.
@@ -109,22 +92,22 @@ contract P1WethProxy is
         address account,
         address payable destination,
         uint256 amount
-    )
-        external
-        nonReentrant
-    {
+    ) external nonReentrant {
         WETH9 weth = _WETH_;
         address marginToken = I_PerpetualV1(perpetual).getTokenContract();
         require(
             marginToken == address(weth),
-            "The perpetual does not use WETH for margin deposits"
+            'The perpetual does not use WETH for margin deposits'
         );
 
         require(
             // Short-circuit if sender is the account owner.
             msg.sender == account ||
-                I_PerpetualV1(perpetual).hasAccountPermissions(account, msg.sender),
-            "Sender does not have withdraw permissions for the account"
+                I_PerpetualV1(perpetual).hasAccountPermissions(
+                    account,
+                    msg.sender
+                ),
+            'Sender does not have withdraw permissions for the account'
         );
 
         // Withdraw WETH from the perpetual.

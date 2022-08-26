@@ -19,10 +19,9 @@
 pragma solidity 0.5.16;
 pragma experimental ABIEncoderV2;
 
-import { I_Aggregator } from "../../../external/chainlink/I_Aggregator.sol";
-import { BaseMath } from "../../lib/BaseMath.sol";
-import { I_P1Oracle } from "../intf/I_P1Oracle.sol";
-
+import {I_Aggregator} from '../../../external/chainlink/I_Aggregator.sol';
+import {BaseMath} from '../../lib/BaseMath.sol';
+import {I_P1Oracle} from '../intf/I_P1Oracle.sol';
 
 /**
  * @title P1ChainlinkOracle
@@ -30,9 +29,7 @@ import { I_P1Oracle } from "../intf/I_P1Oracle.sol";
  *
  * @notice P1Oracle that reads the price from a Chainlink aggregator.
  */
-contract P1ChainlinkOracle is
-    I_P1Oracle
-{
+contract P1ChainlinkOracle is I_P1Oracle {
     using BaseMath for uint256;
 
     // ============ Storage ============
@@ -47,7 +44,7 @@ contract P1ChainlinkOracle is
     uint256 public _ADJUSTMENT_;
 
     // Compact storage for the above parameters.
-    mapping (address => bytes32) public _MAPPING_;
+    mapping(address => bytes32) public _MAPPING_;
 
     // ============ Constructor ============
 
@@ -55,15 +52,12 @@ contract P1ChainlinkOracle is
         address oracle,
         address reader,
         uint96 adjustmentExponent
-    )
-        public
-    {
+    ) public {
         _ORACLE_ = oracle;
         _READER_ = reader;
-        _ADJUSTMENT_ = 10 ** uint256(adjustmentExponent);
+        _ADJUSTMENT_ = 10**uint256(adjustmentExponent);
 
-        bytes32 oracleAndAdjustment =
-            bytes32(bytes20(oracle)) |
+        bytes32 oracleAndAdjustment = bytes32(bytes20(oracle)) |
             bytes32(uint256(adjustmentExponent));
         _MAPPING_[reader] = oracleAndAdjustment;
     }
@@ -75,35 +69,31 @@ contract P1ChainlinkOracle is
      *
      * @return The adjusted price as a fixed-point number with 18 decimals.
      */
-    function getPrice()
-        external
-        view
-        returns (uint256)
-    {
+    function getPrice() external view returns (uint256) {
         bytes32 oracleAndExponent = _MAPPING_[msg.sender];
         require(
             oracleAndExponent != bytes32(0),
-            "P1ChainlinkOracle: Sender not authorized to get price"
+            'P1ChainlinkOracle: Sender not authorized to get price'
         );
-        (address oracle, uint256 adjustment) = getOracleAndAdjustment(oracleAndExponent);
+        (address oracle, uint256 adjustment) = getOracleAndAdjustment(
+            oracleAndExponent
+        );
         int256 answer = I_Aggregator(oracle).latestAnswer();
         require(
             answer > 0,
-            "P1ChainlinkOracle: Invalid answer from aggregator"
+            'P1ChainlinkOracle: Invalid answer from aggregator'
         );
         uint256 rawPrice = uint256(answer);
         return rawPrice.baseMul(adjustment);
     }
 
-    function getOracleAndAdjustment(
-        bytes32 oracleAndExponent
-    )
+    function getOracleAndAdjustment(bytes32 oracleAndExponent)
         private
         pure
         returns (address, uint256)
     {
         address oracle = address(bytes20(oracleAndExponent));
         uint256 exponent = uint256(uint96(uint256(oracleAndExponent)));
-        return (oracle, 10 ** exponent);
+        return (oracle, 10**exponent);
     }
 }

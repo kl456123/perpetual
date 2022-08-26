@@ -19,8 +19,7 @@
 pragma solidity 0.5.16;
 pragma experimental ABIEncoderV2;
 
-import { P1Storage } from "./P1Storage.sol";
-
+import {P1Storage} from './P1Storage.sol';
 
 /**
  * @title P1Operator
@@ -28,9 +27,7 @@ import { P1Storage } from "./P1Storage.sol";
  *
  * @notice Contract for setting local operators for an account.
  */
-contract P1Operator is
-    P1Storage
-{
+contract P1Operator is P1Storage {
     // ============ Events ============
 
     event LogSetLocalOperator(
@@ -49,12 +46,7 @@ contract P1Operator is
      * @param  operator  The account that is approved or disapproved.
      * @param  approved  True for approval, false for disapproval.
      */
-    function setLocalOperator(
-        address operator,
-        bool approved
-    )
-        external
-    {
+    function setLocalOperator(address operator, bool approved) external {
         _LOCAL_OPERATORS_[msg.sender][operator] = approved;
         emit LogSetLocalOperator(msg.sender, operator, approved);
     }

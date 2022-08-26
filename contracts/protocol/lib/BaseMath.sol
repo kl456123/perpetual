@@ -19,8 +19,7 @@
 pragma solidity 0.5.16;
 pragma experimental ABIEncoderV2;
 
-import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
-
+import {SafeMath} from '@openzeppelin/contracts/math/SafeMath.sol';
 
 /**
  * @title BaseMath
@@ -32,26 +31,19 @@ library BaseMath {
     using SafeMath for uint256;
 
     // The number One in the BaseMath system.
-    uint256 constant internal BASE = 10 ** 18;
+    uint256 internal constant BASE = 10**18;
 
     /**
      * @dev Getter function since constants can't be read directly from libraries.
      */
-    function base()
-        internal
-        pure
-        returns (uint256)
-    {
+    function base() internal pure returns (uint256) {
         return BASE;
     }
 
     /**
      * @dev Multiplies a value by a base value (result is rounded down).
      */
-    function baseMul(
-        uint256 value,
-        uint256 baseValue
-    )
+    function baseMul(uint256 value, uint256 baseValue)
         internal
         pure
         returns (uint256)
@@ -64,10 +56,7 @@ library BaseMath {
      *  Intended as an alternaltive to baseMul to prevent overflow, when `value` is known
      *  to be divisible by `BASE`.
      */
-    function baseDivMul(
-        uint256 value,
-        uint256 baseValue
-    )
+    function baseDivMul(uint256 value, uint256 baseValue)
         internal
         pure
         returns (uint256)
@@ -78,10 +67,7 @@ library BaseMath {
     /**
      * @dev Multiplies a value by a base value (result is rounded up).
      */
-    function baseMulRoundUp(
-        uint256 value,
-        uint256 baseValue
-    )
+    function baseMulRoundUp(uint256 value, uint256 baseValue)
         internal
         pure
         returns (uint256)
@@ -95,10 +81,7 @@ library BaseMath {
     /**
      * @dev Divide a value by a base value (result is rounded down).
      */
-    function baseDiv(
-        uint256 value,
-        uint256 baseValue
-    )
+    function baseDiv(uint256 value, uint256 baseValue)
         internal
         pure
         returns (uint256)
@@ -110,13 +93,7 @@ library BaseMath {
      * @dev Returns a base value representing the reciprocal of another base value (result is
      *  rounded down).
      */
-    function baseReciprocal(
-        uint256 baseValue
-    )
-        internal
-        pure
-        returns (uint256)
-    {
+    function baseReciprocal(uint256 baseValue) internal pure returns (uint256) {
         return baseDiv(BASE, baseValue);
     }
 }

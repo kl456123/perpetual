@@ -19,8 +19,7 @@
 pragma solidity 0.5.16;
 pragma experimental ABIEncoderV2;
 
-import { P1Types } from "../lib/P1Types.sol";
-
+import {P1Types} from '../lib/P1Types.sol';
 
 /**
  * @title I_PerpetualV1
@@ -29,7 +28,6 @@ import { P1Types } from "../lib/P1Types.sol";
  * @notice Interface for PerpetualV1.
  */
 interface I_PerpetualV1 {
-
     // ============ Structs ============
 
     struct TradeArg {
@@ -47,18 +45,14 @@ interface I_PerpetualV1 {
      * @param  accounts  The sorted list of accounts that are involved in trades.
      * @param  trades    The list of trades to execute in-order.
      */
-    function trade(
-        address[] calldata accounts,
-        TradeArg[] calldata trades
-    )
+    function trade(address[] calldata accounts, TradeArg[] calldata trades)
         external;
 
     /**
      * @notice Withdraw the number of margin tokens equal to the value of the account at the time
      *  that final settlement occurred.
      */
-    function withdrawFinalSettlement()
-        external;
+    function withdrawFinalSettlement() external;
 
     /**
      * @notice Deposit some amount of margin tokens from the msg.sender into an account.
@@ -66,11 +60,7 @@ interface I_PerpetualV1 {
      * @param  account  The account for which to credit the deposit.
      * @param  amount   the amount of tokens to deposit.
      */
-    function deposit(
-        address account,
-        uint256 amount
-    )
-        external;
+    function deposit(address account, uint256 amount) external;
 
     /**
      * @notice Withdraw some amount of margin tokens from an account to a destination address.
@@ -83,8 +73,7 @@ interface I_PerpetualV1 {
         address account,
         address destination,
         uint256 amount
-    )
-        external;
+    ) external;
 
     /**
      * @notice Grants or revokes permission for another account to perform certain actions on behalf
@@ -93,11 +82,7 @@ interface I_PerpetualV1 {
      * @param  operator  The account that is approved or disapproved.
      * @param  approved  True for approval, false for disapproval.
      */
-    function setLocalOperator(
-        address operator,
-        bool approved
-    )
-        external;
+    function setLocalOperator(address operator, bool approved) external;
 
     // ============ Account Getters ============
 
@@ -107,9 +92,7 @@ interface I_PerpetualV1 {
      * @param  account  The address of the account to query the balances of.
      * @return          The balances of the account.
      */
-    function getAccountBalance(
-        address account
-    )
+    function getAccountBalance(address account)
         external
         view
         returns (P1Types.Balance memory);
@@ -120,9 +103,7 @@ interface I_PerpetualV1 {
      * @param  account  The address of the account to query the index of.
      * @return          The index of the account.
      */
-    function getAccountIndex(
-        address account
-    )
+    function getAccountIndex(address account)
         external
         view
         returns (P1Types.Index memory);
@@ -134,10 +115,7 @@ interface I_PerpetualV1 {
      * @param  operator  The address of the operator to query the status of.
      * @return           True if the operator is a local operator of the account, false otherwise.
      */
-    function getIsLocalOperator(
-        address account,
-        address operator
-    )
+    function getIsLocalOperator(address account, address operator)
         external
         view
         returns (bool);
@@ -150,52 +128,35 @@ interface I_PerpetualV1 {
      * @param  operator  The address of the operator to query the status of.
      * @return           True if the address is a global operator, false otherwise.
      */
-    function getIsGlobalOperator(
-        address operator
-    )
-        external
-        view
-        returns (bool);
+    function getIsGlobalOperator(address operator) external view returns (bool);
 
     /**
      * @notice Gets the address of the ERC20 margin contract used for margin deposits.
      *
      * @return The address of the ERC20 token.
      */
-    function getTokenContract()
-        external
-        view
-        returns (address);
+    function getTokenContract() external view returns (address);
 
     /**
      * @notice Gets the current address of the price oracle contract.
      *
      * @return The address of the price oracle contract.
      */
-    function getOracleContract()
-        external
-        view
-        returns (address);
+    function getOracleContract() external view returns (address);
 
     /**
      * @notice Gets the current address of the funder contract.
      *
      * @return The address of the funder contract.
      */
-    function getFunderContract()
-        external
-        view
-        returns (address);
+    function getFunderContract() external view returns (address);
 
     /**
      * @notice Gets the most recently cached global index.
      *
      * @return The most recently cached global index.
      */
-    function getGlobalIndex()
-        external
-        view
-        returns (P1Types.Index memory);
+    function getGlobalIndex() external view returns (P1Types.Index memory);
 
     /**
      * @notice Gets minimum collateralization ratio of the protocol.
@@ -203,20 +164,14 @@ interface I_PerpetualV1 {
      * @return The minimum-acceptable collateralization ratio, returned as a fixed-point number with
      *  18 decimals of precision.
      */
-    function getMinCollateral()
-        external
-        view
-        returns (uint256);
+    function getMinCollateral() external view returns (uint256);
 
     /**
      * @notice Gets the status of whether final-settlement was initiated by the Admin.
      *
      * @return True if final-settlement was enabled, false otherwise.
      */
-    function getFinalSettlementEnabled()
-        external
-        view
-        returns (bool);
+    function getFinalSettlementEnabled() external view returns (bool);
 
     // ============ Public Getters ============
 
@@ -228,10 +183,7 @@ interface I_PerpetualV1 {
      * @return           True if the operator has permission to operate the account,
      *                   and false otherwise.
      */
-    function hasAccountPermissions(
-        address account,
-        address operator
-    )
+    function hasAccountPermissions(address account, address operator)
         external
         view
         returns (bool);
@@ -244,8 +196,5 @@ interface I_PerpetualV1 {
      *
      * @return The price returned by the current price oracle.
      */
-    function getOraclePrice()
-        external
-        view
-        returns (uint256);
+    function getOraclePrice() external view returns (uint256);
 }

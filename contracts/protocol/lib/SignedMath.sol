@@ -19,8 +19,7 @@
 pragma solidity 0.5.16;
 pragma experimental ABIEncoderV2;
 
-import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
-
+import {SafeMath} from '@openzeppelin/contracts/math/SafeMath.sol';
 
 /**
  * @title SignedMath
@@ -43,104 +42,69 @@ library SignedMath {
     /**
      * @dev Returns a new signed integer equal to a signed integer plus an unsigned integer.
      */
-    function add(
-        Int memory sint,
-        uint256 value
-    )
+    function add(Int memory sint, uint256 value)
         internal
         pure
         returns (Int memory)
     {
         if (sint.isPositive) {
-            return Int({
-                value: value.add(sint.value),
-                isPositive: true
-            });
+            return Int({value: value.add(sint.value), isPositive: true});
         }
         if (sint.value < value) {
-            return Int({
-                value: value.sub(sint.value),
-                isPositive: true
-            });
+            return Int({value: value.sub(sint.value), isPositive: true});
         }
-        return Int({
-            value: sint.value.sub(value),
-            isPositive: false
-        });
+        return Int({value: sint.value.sub(value), isPositive: false});
     }
 
     /**
      * @dev Returns a new signed integer equal to a signed integer minus an unsigned integer.
      */
-    function sub(
-        Int memory sint,
-        uint256 value
-    )
+    function sub(Int memory sint, uint256 value)
         internal
         pure
         returns (Int memory)
     {
         if (!sint.isPositive) {
-            return Int({
-                value: value.add(sint.value),
-                isPositive: false
-            });
+            return Int({value: value.add(sint.value), isPositive: false});
         }
         if (sint.value > value) {
-            return Int({
-                value: sint.value.sub(value),
-                isPositive: true
-            });
+            return Int({value: sint.value.sub(value), isPositive: true});
         }
-        return Int({
-            value: value.sub(sint.value),
-            isPositive: false
-        });
+        return Int({value: value.sub(sint.value), isPositive: false});
     }
 
     /**
      * @dev Returns a new signed integer equal to a signed integer plus another signed integer.
      */
-    function signedAdd(
-        Int memory augend,
-        Int memory addend
-    )
+    function signedAdd(Int memory augend, Int memory addend)
         internal
         pure
         returns (Int memory)
     {
-        return addend.isPositive
-            ? add(augend, addend.value)
-            : sub(augend, addend.value);
+        return
+            addend.isPositive
+                ? add(augend, addend.value)
+                : sub(augend, addend.value);
     }
 
     /**
      * @dev Returns a new signed integer equal to a signed integer minus another signed integer.
      */
-    function signedSub(
-        Int memory minuend,
-        Int memory subtrahend
-    )
+    function signedSub(Int memory minuend, Int memory subtrahend)
         internal
         pure
         returns (Int memory)
     {
-        return subtrahend.isPositive
-            ? sub(minuend, subtrahend.value)
-            : add(minuend, subtrahend.value);
+        return
+            subtrahend.isPositive
+                ? sub(minuend, subtrahend.value)
+                : add(minuend, subtrahend.value);
     }
 
     /**
      * @dev Returns true if signed integer `a` is greater than signed integer `b`, false otherwise.
      */
-    function gt(
-        Int memory a,
-        Int memory b
-    )
-        internal
-        pure
-        returns (bool)
-    {
+    function gt(Int memory a, Int memory b) internal pure returns (bool) {
         if (a.isPositive) {
             if (b.isPositive) {
                 return a.value > b.value;
@@ -160,10 +124,7 @@ library SignedMath {
     /**
      * @dev Returns the minimum of signed integers `a` and `b`.
      */
-    function min(
-        Int memory a,
-        Int memory b
-    )
+    function min(Int memory a, Int memory b)
         internal
         pure
         returns (Int memory)
@@ -174,10 +135,7 @@ library SignedMath {
     /**
      * @dev Returns the maximum of signed integers `a` and `b`.
      */
-    function max(
-        Int memory a,
-        Int memory b
-    )
+    function max(Int memory a, Int memory b)
         internal
         pure
         returns (Int memory)

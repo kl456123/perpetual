@@ -19,7 +19,6 @@
 pragma solidity 0.5.16;
 pragma experimental ABIEncoderV2;
 
-
 /**
  * @title I_ExchangeWrapper
  * @author dYdX
@@ -27,7 +26,6 @@ pragma experimental ABIEncoderV2;
  * @notice Interface for exchange wrappers, used to trade ERC20 tokens.
  */
 interface I_ExchangeWrapper {
-
     // ============ Public Functions ============
 
     /**
@@ -50,9 +48,7 @@ interface I_ExchangeWrapper {
         address takerToken,
         uint256 requestedFillAmount,
         bytes calldata orderData
-    )
-        external
-        returns (uint256);
+    ) external returns (uint256);
 
     /**
      * Get amount of takerToken required to buy a certain amount of makerToken for a given trade.
@@ -71,8 +67,5 @@ interface I_ExchangeWrapper {
         address takerToken,
         uint256 desiredMakerToken,
         bytes calldata orderData
-    )
-        external
-        view
-        returns (uint256);
+    ) external view returns (uint256);
 }

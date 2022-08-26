@@ -19,7 +19,6 @@
 pragma solidity 0.5.16;
 pragma experimental ABIEncoderV2;
 
-
 /**
  * @title I_Aggregator
  * @author dYdX
@@ -27,15 +26,11 @@ pragma experimental ABIEncoderV2;
  * Partial interface for a Chainlink Aggregator.
  */
 interface I_Aggregator {
-
     // ============ Getter Functions ============
 
     /**
      * @notice Get the most recent answer from the aggregator.
      * @dev Warning: Will return 0 if no answer has been reached.
      */
-    function latestAnswer()
-        external
-        view
-        returns (int256);
+    function latestAnswer() external view returns (int256);
 }

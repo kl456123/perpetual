@@ -19,8 +19,7 @@
 pragma solidity 0.5.16;
 pragma experimental ABIEncoderV2;
 
-import { P1MirrorOracle } from "./P1MirrorOracle.sol";
-
+import {P1MirrorOracle} from './P1MirrorOracle.sol';
 
 /**
  * @title P1MirrorOracleETHUSD
@@ -28,24 +27,12 @@ import { P1MirrorOracle } from "./P1MirrorOracle.sol";
  *
  * Oracle which mirrors the ETHUSD oracle.
  */
-contract P1MirrorOracleETHUSD is
-    P1MirrorOracle
-{
-    bytes32 public constant WAT = "ETHUSD";
+contract P1MirrorOracleETHUSD is P1MirrorOracle {
+    bytes32 public constant WAT = 'ETHUSD';
 
-    constructor(
-        address oracle
-    )
-        P1MirrorOracle(oracle)
-        public
-    {
-    }
+    constructor(address oracle) public P1MirrorOracle(oracle) {}
 
-    function wat()
-        internal
-        pure
-        returns (bytes32)
-    {
+    function wat() internal pure returns (bytes32) {
         return WAT;
     }
 }

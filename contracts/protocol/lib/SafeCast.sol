@@ -19,7 +19,6 @@
 pragma solidity 0.5.16;
 pragma experimental ABIEncoderV2;
 
-
 /**
  * @title SafeCast
  * @author dYdX
@@ -27,7 +26,6 @@ pragma experimental ABIEncoderV2;
  * @dev Library for casting uint256 to other types of uint.
  */
 library SafeCast {
-
     /**
      * @dev Returns the downcasted uint128 from uint256, reverting on
      *  overflow (i.e. when the input is greater than largest uint128).
@@ -37,14 +35,8 @@ library SafeCast {
      *  Requirements:
      *  - `value` must fit into 128 bits.
      */
-    function toUint128(
-        uint256 value
-    )
-        internal
-        pure
-        returns (uint128)
-    {
-        require(value < 2**128, "SafeCast: value doesn\'t fit in 128 bits");
+    function toUint128(uint256 value) internal pure returns (uint128) {
+        require(value < 2**128, "SafeCast: value doesn't fit in 128 bits");
         return uint128(value);
     }
 
@@ -57,14 +49,8 @@ library SafeCast {
      *  Requirements:
      *  - `value` must fit into 120 bits.
      */
-    function toUint120(
-        uint256 value
-    )
-        internal
-        pure
-        returns (uint120)
-    {
-        require(value < 2**120, "SafeCast: value doesn\'t fit in 120 bits");
+    function toUint120(uint256 value) internal pure returns (uint120) {
+        require(value < 2**120, "SafeCast: value doesn't fit in 120 bits");
         return uint120(value);
     }
 
@@ -77,14 +63,8 @@ library SafeCast {
      *  Requirements:
      *  - `value` must fit into 32 bits.
      */
-    function toUint32(
-        uint256 value
-    )
-        internal
-        pure
-        returns (uint32)
-    {
-        require(value < 2**32, "SafeCast: value doesn\'t fit in 32 bits");
+    function toUint32(uint256 value) internal pure returns (uint32) {
+        require(value < 2**32, "SafeCast: value doesn't fit in 32 bits");
         return uint32(value);
     }
 }

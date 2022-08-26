@@ -19,7 +19,6 @@
 pragma solidity 0.5.16;
 pragma experimental ABIEncoderV2;
 
-
 /**
  * @title ReentrancyGuard
  * @author dYdX
@@ -32,12 +31,12 @@ contract ReentrancyGuard {
 
     uint256 private _STATUS_;
 
-    constructor () internal {
+    constructor() internal {
         _STATUS_ = NOT_ENTERED;
     }
 
     modifier nonReentrant() {
-        require(_STATUS_ != ENTERED, "ReentrancyGuard: reentrant call");
+        require(_STATUS_ != ENTERED, 'ReentrancyGuard: reentrant call');
         _STATUS_ = ENTERED;
         _;
         _STATUS_ = NOT_ENTERED;

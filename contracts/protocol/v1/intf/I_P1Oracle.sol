@@ -19,7 +19,6 @@
 pragma solidity 0.5.16;
 pragma experimental ABIEncoderV2;
 
-
 /**
  * @title I_P1Oracle
  * @author dYdX
@@ -27,14 +26,10 @@ pragma experimental ABIEncoderV2;
  * @notice Interface that PerpetualV1 Price Oracles must implement.
  */
 interface I_P1Oracle {
-
     /**
      * @notice Returns the price of the underlying asset relative to the margin token.
      *
      * @return The price as a fixed-point number with 18 decimals.
      */
-    function getPrice()
-        external
-        view
-        returns (uint256);
+    function getPrice() external view returns (uint256);
 }

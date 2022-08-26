@@ -19,17 +19,16 @@
 pragma solidity 0.5.16;
 pragma experimental ABIEncoderV2;
 
-import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
-import { P1Storage } from "./P1Storage.sol";
-import { BaseMath } from "../../lib/BaseMath.sol";
-import { SafeCast } from "../../lib/SafeCast.sol";
-import { SignedMath } from "../../lib/SignedMath.sol";
-import { I_P1Funder } from "../intf/I_P1Funder.sol";
-import { I_P1Oracle } from "../intf/I_P1Oracle.sol";
-import { P1BalanceMath } from "../lib/P1BalanceMath.sol";
-import { P1IndexMath } from "../lib/P1IndexMath.sol";
-import { P1Types } from "../lib/P1Types.sol";
-
+import {SafeMath} from '@openzeppelin/contracts/math/SafeMath.sol';
+import {P1Storage} from './P1Storage.sol';
+import {BaseMath} from '../../lib/BaseMath.sol';
+import {SafeCast} from '../../lib/SafeCast.sol';
+import {SignedMath} from '../../lib/SignedMath.sol';
+import {I_P1Funder} from '../intf/I_P1Funder.sol';
+import {I_P1Oracle} from '../intf/I_P1Oracle.sol';
+import {P1BalanceMath} from '../lib/P1BalanceMath.sol';
+import {P1IndexMath} from '../lib/P1IndexMath.sol';
+import {P1Types} from '../lib/P1Types.sol';
 
 /**
  * @title P1Settlement
@@ -37,9 +36,7 @@ import { P1Types } from "../lib/P1Types.sol";
  *
  * @notice Contract containing logic for settling funding payments between accounts.
  */
-contract P1Settlement is
-    P1Storage
-{
+contract P1Settlement is P1Storage {
     using BaseMath for uint256;
     using SafeCast for uint256;
     using SafeMath for uint256;
@@ -49,9 +46,7 @@ contract P1Settlement is
 
     // ============ Events ============
 
-    event LogIndex(
-        bytes32 index
-    );
+    event LogIndex(bytes32 index);
 
     event LogAccountSettled(
         address indexed account,
@@ -70,10 +65,7 @@ contract P1Settlement is
      *         - The global index;
      *         - The minimum required collateralization.
      */
-    function _loadContext()
-        internal
-        returns (P1Types.Context memory)
-    {
+    function _loadContext() internal returns (P1Types.Context memory) {
         // SLOAD old index
         P1Types.Index memory index = _GLOBAL_INDEX_;
 
@@ -90,10 +82,8 @@ contract P1Settlement is
             });
 
             // Get the funding rate, applied over the time delta.
-            (
-                bool fundingPositive,
-                uint256 fundingValue
-            ) = I_P1Funder(_FUNDER_).getFunding(timeDelta);
+            (bool fundingPositive, uint256 fundingValue) = I_P1Funder(_FUNDER_)
+                .getFunding(timeDelta);
             fundingValue = fundingValue.baseMul(price);
 
             // Update the index according to the funding rate, applied over the time delta.
@@ -114,11 +104,12 @@ contract P1Settlement is
 
         emit LogIndex(index.toBytes32());
 
-        return P1Types.Context({
-            price: price,
-            minCollateral: _MIN_COLLATERAL_,
-            index: index
-        });
+        return
+            P1Types.Context({
+                price: price,
+                minCollateral: _MIN_COLLATERAL_,
+                index: index
+            });
     }
 
     /**
@@ -127,10 +118,7 @@ contract P1Settlement is
     function _settleAccounts(
         P1Types.Context memory context,
         address[] memory accounts
-    )
-        internal
-        returns (P1Types.Balance[] memory)
-    {
+    ) internal returns (P1Types.Balance[] memory) {
         uint256 numAccounts = accounts.length;
         P1Types.Balance[] memory result = new P1Types.Balance[](numAccounts);
 
@@ -144,10 +132,7 @@ contract P1Settlement is
     /**
      * @dev Settle the funding payment for a single account and return its resulting balance.
      */
-    function _settleAccount(
-        P1Types.Context memory context,
-        address account
-    )
+    function _settleAccount(P1Types.Context memory context, address account)
         internal
         returns (P1Types.Balance memory)
     {
@@ -181,7 +166,8 @@ contract P1Settlement is
 
         // By convention, positive funding (index increases) means longs pay shorts
         // and negative funding (index decreases) means shorts pay longs.
-        bool settlementIsPositive = signedIndexDiff.isPositive != balance.positionIsPositive;
+        bool settlementIsPositive = signedIndexDiff.isPositive !=
+            balance.positionIsPositive;
 
         // Settle the account balance by applying the index delta as a credit or debit.
         // The interest amount scales with the position size.
@@ -193,7 +179,9 @@ contract P1Settlement is
             settlementAmount = signedIndexDiff.value.baseMul(balance.position);
             balance.addToMargin(settlementAmount);
         } else {
-            settlementAmount = signedIndexDiff.value.baseMulRoundUp(balance.position);
+            settlementAmount = signedIndexDiff.value.baseMulRoundUp(
+                balance.position
+            );
             balance.subFromMargin(settlementAmount);
         }
         _BALANCES_[account] = balance;
@@ -216,16 +204,15 @@ contract P1Settlement is
     function _isCollateralized(
         P1Types.Context memory context,
         P1Types.Balance memory balance
-    )
-        internal
-        pure
-        returns (bool)
-    {
-        (uint256 positive, uint256 negative) = balance.getPositiveAndNegativeValue(context.price);
+    ) internal pure returns (bool) {
+        (uint256 positive, uint256 negative) = balance
+            .getPositiveAndNegativeValue(context.price);
 
         // Overflow risk assessment:
         // 2^256 / 10^36 is significantly greater than 2^120 and this calculation is therefore not
         // expected to be a limiting factor on the size of accounts that this contract can handle.
-        return positive.mul(BaseMath.base()) >= negative.mul(context.minCollateral);
+        return
+            positive.mul(BaseMath.base()) >=
+            negative.mul(context.minCollateral);
     }
 }

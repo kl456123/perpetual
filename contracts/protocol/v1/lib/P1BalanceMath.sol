@@ -19,12 +19,11 @@
 pragma solidity 0.5.16;
 pragma experimental ABIEncoderV2;
 
-import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
-import { P1Types } from "./P1Types.sol";
-import { BaseMath } from "../../lib/BaseMath.sol";
-import { SafeCast } from "../../lib/SafeCast.sol";
-import { SignedMath } from "../../lib/SignedMath.sol";
-
+import {SafeMath} from '@openzeppelin/contracts/math/SafeMath.sol';
+import {P1Types} from './P1Types.sol';
+import {BaseMath} from '../../lib/BaseMath.sol';
+import {SafeCast} from '../../lib/SafeCast.sol';
+import {SignedMath} from '../../lib/SignedMath.sol';
 
 /**
  * @title P1BalanceMath
@@ -49,28 +48,24 @@ library P1BalanceMath {
     /**
      * @dev Create a copy of the balance struct.
      */
-    function copy(
-        P1Types.Balance memory balance
-    )
+    function copy(P1Types.Balance memory balance)
         internal
         pure
         returns (P1Types.Balance memory)
     {
-        return P1Types.Balance({
-            marginIsPositive: balance.marginIsPositive,
-            positionIsPositive: balance.positionIsPositive,
-            margin: balance.margin,
-            position: balance.position
-        });
+        return
+            P1Types.Balance({
+                marginIsPositive: balance.marginIsPositive,
+                positionIsPositive: balance.positionIsPositive,
+                margin: balance.margin,
+                position: balance.position
+            });
     }
 
     /**
      * @dev In-place add amount to balance.margin.
      */
-    function addToMargin(
-        P1Types.Balance memory balance,
-        uint256 amount
-    )
+    function addToMargin(P1Types.Balance memory balance, uint256 amount)
         internal
         pure
     {
@@ -82,10 +77,7 @@ library P1BalanceMath {
     /**
      * @dev In-place subtract amount from balance.margin.
      */
-    function subFromMargin(
-        P1Types.Balance memory balance,
-        uint256 amount
-    )
+    function subFromMargin(P1Types.Balance memory balance, uint256 amount)
         internal
         pure
     {
@@ -97,10 +89,7 @@ library P1BalanceMath {
     /**
      * @dev In-place add amount to balance.position.
      */
-    function addToPosition(
-        P1Types.Balance memory balance,
-        uint256 amount
-    )
+    function addToPosition(P1Types.Balance memory balance, uint256 amount)
         internal
         pure
     {
@@ -112,10 +101,7 @@ library P1BalanceMath {
     /**
      * @dev In-place subtract amount from balance.position.
      */
-    function subFromPosition(
-        P1Types.Balance memory balance,
-        uint256 amount
-    )
+    function subFromPosition(P1Types.Balance memory balance, uint256 amount)
         internal
         pure
     {
@@ -133,11 +119,7 @@ library P1BalanceMath {
     function getPositiveAndNegativeValue(
         P1Types.Balance memory balance,
         uint256 price
-    )
-        internal
-        pure
-        returns (uint256, uint256)
-    {
+    ) internal pure returns (uint256, uint256) {
         uint256 positiveValue = 0;
         uint256 negativeValue = 0;
 
@@ -162,18 +144,15 @@ library P1BalanceMath {
     /**
      * @dev Returns a compressed bytes32 representation of the balance for logging.
      */
-    function toBytes32(
-        P1Types.Balance memory balance
-    )
+    function toBytes32(P1Types.Balance memory balance)
         internal
         pure
         returns (bytes32)
     {
-        uint256 result =
-            uint256(balance.position)
-            | (uint256(balance.margin) << 128)
-            | (balance.marginIsPositive ? FLAG_MARGIN_IS_POSITIVE : 0)
-            | (balance.positionIsPositive ? FLAG_POSITION_IS_POSITIVE : 0);
+        uint256 result = uint256(balance.position) |
+            (uint256(balance.margin) << 128) |
+            (balance.marginIsPositive ? FLAG_MARGIN_IS_POSITIVE : 0) |
+            (balance.positionIsPositive ? FLAG_POSITION_IS_POSITIVE : 0);
         return bytes32(result);
     }
 
@@ -182,33 +161,31 @@ library P1BalanceMath {
     /**
      * @dev Returns a SignedMath.Int version of the margin in balance.
      */
-    function getMargin(
-        P1Types.Balance memory balance
-    )
+    function getMargin(P1Types.Balance memory balance)
         internal
         pure
         returns (SignedMath.Int memory)
     {
-        return SignedMath.Int({
-            value: balance.margin,
-            isPositive: balance.marginIsPositive
-        });
+        return
+            SignedMath.Int({
+                value: balance.margin,
+                isPositive: balance.marginIsPositive
+            });
     }
 
     /**
      * @dev Returns a SignedMath.Int version of the position in balance.
      */
-    function getPosition(
-        P1Types.Balance memory balance
-    )
+    function getPosition(P1Types.Balance memory balance)
         internal
         pure
         returns (SignedMath.Int memory)
     {
-        return SignedMath.Int({
-            value: balance.position,
-            isPositive: balance.positionIsPositive
-        });
+        return
+            SignedMath.Int({
+                value: balance.position,
+                isPositive: balance.positionIsPositive
+            });
     }
 
     /**
@@ -217,10 +194,7 @@ library P1BalanceMath {
     function setMargin(
         P1Types.Balance memory balance,
         SignedMath.Int memory newMargin
-    )
-        internal
-        pure
-    {
+    ) internal pure {
         balance.margin = newMargin.value.toUint120();
         balance.marginIsPositive = newMargin.isPositive;
     }
@@ -231,10 +205,7 @@ library P1BalanceMath {
     function setPosition(
         P1Types.Balance memory balance,
         SignedMath.Int memory newPosition
-    )
-        internal
-        pure
-    {
+    ) internal pure {
         balance.position = newPosition.value.toUint120();
         balance.positionIsPositive = newPosition.isPositive;
     }
