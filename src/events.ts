@@ -1,5 +1,5 @@
 import EventEmitter from 'events';
-import { SRAOrder, EventType, TradeHistory } from './types';
+import { SRAOrder, EventType, TradeHistory, ApiAccount } from './types';
 
 export class EventManager extends EventEmitter {
   public emitOrder(sraOrder: SRAOrder) {
@@ -8,6 +8,10 @@ export class EventManager extends EventEmitter {
 
   public emitTradeRecord(tradeHistory: TradeHistory) {
     this.emit(EventType.TradeRecord, tradeHistory);
+  }
+
+  public emitAccountState(apiAccount: ApiAccount) {
+    this.emit(EventType.AccountState, apiAccount);
   }
 }
 

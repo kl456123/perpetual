@@ -94,6 +94,32 @@ export class OrderBookHandlers {
     ctx.body = tradesHistory;
   }
 
+  public async cancelOrderAsync(ctx: Context): Promise<void> {
+    if (!Array.isArray(ctx.request.body.ordersHash)) {
+      throw new Error(`non array data is not supported`);
+    }
+    const ordersHash: string[] = ctx.request.body.ordersHash;
+    const orders = await Promise.all(
+      ordersHash.map(orderHash =>
+        this.orderBook.getOrderByHashIfExistsAsync(orderHash)
+      )
+    );
+    if (!orders.length) {
+      logger.warn(`order has already removed from orderbook`);
+    }
+    await this.orderBook.cancelOrdersAsyncByHash(ordersHash);
+    orders.map(order =>
+      this.eventManager.emitOrder({
+        order: order.order,
+        metaData: {
+          ...order.metaData,
+          filledAmount: order.order.amount,
+        },
+      })
+    );
+    ctx.status = 200;
+  }
+
   public async postOrderAsync(ctx: Context): Promise<void> {
     const shouldSkipConfirmation = ctx.query.skipConfirmation === 'true';
     const signedOrder = unmarshallOrder(ctx.request.body);

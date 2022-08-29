@@ -369,6 +369,7 @@ export interface WebsocketSRAOpts {
 export interface TradeHistory {
   hash: string;
   taker: address;
+  maker: address;
   price: Price;
   amount: BigNumber;
   timestamp: BigNumber;
@@ -380,6 +381,9 @@ export interface TradeHistory {
 export interface OrderBookSubscriptionOpts {
   makerToken?: address;
   takerToken?: address;
+  taker?: address;
+  maker?: address;
+  trader?: address;
 }
 
 export interface OrderBookSubscriptionOptsWithChannel
@@ -401,6 +405,7 @@ export enum MessageTypes {
 export enum MessageChannels {
   Orders = 'orders',
   TradeHistory = 'trades',
+  AccountState = 'accountState',
 }
 export interface UpdateOrdersChannelMessageWithChannel
   extends UpdateOrdersChannelMessage {
@@ -409,6 +414,11 @@ export interface UpdateOrdersChannelMessageWithChannel
 
 export interface UpdateTradesHistoryChannelMessageWithChannel
   extends UpdateTradesHistoryChannelMessage {
+  channel: MessageChannels;
+}
+
+export interface UpdateAccountBalanceChannelMessageWithChannel
+  extends UpdateAccountBalanceChannelMessage {
   channel: MessageChannels;
 }
 
@@ -438,6 +448,12 @@ export interface UpdateTradesHistoryChannelMessage {
   payload: TradeHistory[];
 }
 
+export interface UpdateAccountBalanceChannelMessage {
+  type: OrdersChannelMessageTypes.Update;
+  requestId: string;
+  payload: ApiAccount;
+}
+
 export enum WebsocketConnectionEventType {
   Close = 'close',
   Error = 'error',
@@ -454,6 +470,7 @@ export enum EventType {
   Order = 'Order',
   OrderBook = 'OrderBook',
   TradeRecord = 'TradeRecord',
+  AccountState = 'AccountState',
 
   // event of account
   Deposit = 'Deposit',

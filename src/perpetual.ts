@@ -1,5 +1,12 @@
 import { ethers } from 'ethers';
-import { ApiMarketName, ChainId, PerpetualOptions } from './types';
+import { BigNumber } from 'bignumber.js';
+import {
+  ApiMarketName,
+  ChainId,
+  PerpetualOptions,
+  ApiBalance,
+  ApiAccount,
+} from './types';
 import { Contracts } from './contracts';
 import { Api } from './api';
 import { Orders } from './orders';
@@ -27,5 +34,33 @@ export class Perpetual {
     this.trade = new Trade(this.provider, this.contracts, this.orders);
     this.priceOracle = new PriceOracle(this.contracts);
     this.fundingOracle = new FundingOracle(this.contracts);
+  }
+
+  async getAccount(account: string): Promise<ApiAccount> {
+    const [balance, accountIndex] = await Promise.all([
+      this.contracts.perpetualProxy.getAccountBalance(account),
+      this.contracts.perpetualProxy.getAccountIndex(account),
+    ]);
+    const indexValue = new BigNumber(accountIndex.value.toString());
+
+    const margin = new BigNumber(balance.margin.toString());
+    const position = new BigNumber(balance.position.toString());
+
+    const apiBalance: ApiBalance = {
+      margin: (balance.marginIsPositive ? margin : margin.negated()).toString(),
+      position: (balance.positionIsPositive
+        ? position
+        : position.negated()
+      ).toString(),
+      indexValue: accountIndex.isPositive
+        ? indexValue.toString()
+        : indexValue.negated().toString(),
+      indexTimestamp: accountIndex.timestamp.toString(),
+    };
+
+    return {
+      owner: account,
+      balances: { [this.contracts.market]: apiBalance },
+    };
   }
 }
