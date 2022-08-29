@@ -16,11 +16,4 @@ export class AccountService {
       .connect(wallet)
       .mint(account, amount.toFixed(0));
   }
-
-  public async drop(account: string, amount: BigNumber) {
-    const wallet = this.perpetual.provider.getSigner(DEPLOYER_ACCOUNT);
-    await this.perpetual.contracts.marginToken
-      .connect(wallet)
-      .mint(account, amount.toFixed(0));
-  }
 }
