@@ -32,5 +32,9 @@ export function createOrderBookRouter(dependencies: AppDependencies) {
   );
 
   router.post('/order', orderBookHandler.postOrderAsync.bind(orderBookHandler));
+  router.post(
+    '/cancelOrder',
+    orderBookHandler.cancelOrderAsync.bind(orderBookHandler)
+  );
   return router;
 }

@@ -23,6 +23,7 @@ import { logger } from '../logger';
 import { OPERATOR_ACCOUNT } from '../config';
 import { calculateFundingrate } from '../utils';
 import { eventManager } from '../events';
+import { NULL_ADDRESS } from '../constants';
 
 export class OrderBookService {
   constructor(
@@ -241,7 +242,9 @@ export class OrderBookService {
       }
 
       const updatedOrders = [];
+      // const updatedUsers = [signedOrder.maker];
       const emittedOrders = [];
+      const tradesHistoryArgs = [];
       let totalVolume = new BigNumber(0);
       for (let i = 0; i < apiOrders.length; ++i) {
         if (remainingAmount.lte(0)) {
@@ -282,6 +285,14 @@ export class OrderBookService {
           apiOrders[i].metaData.filledAmount.plus(tradedAmount);
         updatedOrders.push(orderUtils.serializeOrder(apiOrders[i]));
         emittedOrders.push(apiOrders[i]);
+        tradesHistoryArgs.push({
+          taker: NULL_ADDRESS,
+          maker: signedMakerOrder.maker,
+          isBuy: signedMakerOrder.isBuy,
+          price: signedMakerOrder.limitPrice.value.toFixed(2),
+          amount: tradedAmount.toFixed(0),
+        });
+        // updatedUsers.push(signedMakerOrder.maker);
       }
       const totalTradedAmount = signedOrder.amount.minus(remainingAmount);
       const txRes = await tradeOperation.commit({ from: OPERATOR_ACCOUNT });
@@ -295,29 +306,58 @@ export class OrderBookService {
       );
       // emit all updated orders
       emittedOrders.map(order => eventManager.emitOrder(order));
+      // TODO use timestamp in blockchain
+      const timestamp = Math.round(new Date().getTime() / 1000).toFixed(0);
 
+      // emit updates of apiAccounts
+      // const apiAccounts  = await Promise.all(updatedUsers.map(user=>this.perpetual.getAccount(user)));
+      // apiAccounts.map(apiAccount=>eventManager.emitAccountState(apiAccount));
+
+      const tradesHistory = tradesHistoryArgs.map(
+        tradesHistoryArg =>
+          new TradeHistoryEntity({
+            ...tradesHistoryArg,
+            hash: txRecipient.transactionHash,
+            blockNumber: txRecipient.blockNumber,
+            timestamp,
+          })
+      );
       // add current trade to history
-      const tradeHistory = new TradeHistoryEntity({
-        taker: signedOrder.maker,
-        hash: txRecipient.transactionHash,
-        blockNumber: txRecipient.blockNumber,
-        timestamp: Math.round(new Date().getTime() / 1000).toFixed(0),
-        price: totalVolume.div(totalTradedAmount).toFixed(2),
-        amount: totalTradedAmount.toFixed(0),
-      });
-      await this.connection.manager.save(tradeHistory);
-      eventManager.emitTradeRecord({
-        ...tradeHistory,
-        amount: new BigNumber(tradeHistory.amount),
-        price: new Price(tradeHistory.price),
-        timestamp: new BigNumber(tradeHistory.timestamp),
-      });
+      tradesHistory.push(
+        new TradeHistoryEntity({
+          taker: signedOrder.maker,
+          maker: NULL_ADDRESS,
+          isBuy: signedOrder.isBuy,
+          hash: txRecipient.transactionHash,
+          blockNumber: txRecipient.blockNumber,
+          price: totalVolume.div(totalTradedAmount).toFixed(2),
+          timestamp,
+          amount: totalTradedAmount.toFixed(0),
+        })
+      );
+      await Promise.all(
+        tradesHistory.map(tradeHistory =>
+          this.connection.manager.save(tradeHistory)
+        )
+      );
+      tradesHistory.map(tradeHistory =>
+        eventManager.emitTradeRecord({
+          ...tradeHistory,
+          amount: new BigNumber(tradeHistory.amount),
+          price: new Price(tradeHistory.price),
+          timestamp: new BigNumber(tradeHistory.timestamp),
+        })
+      );
     }
 
     return {
       filledAmount: signedOrder.amount.minus(remainingAmount),
       isFullfilled: remainingAmount.eq(0),
     };
+  }
+
+  public async cancelOrdersAsyncByHash(orderHash: string[]) {
+    await this.connection.manager.delete(SignedOrderEntity, orderHash);
   }
 
   public async addOrderAsync(
