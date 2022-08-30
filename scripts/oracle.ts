@@ -22,7 +22,11 @@ async function main() {
   const account = '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC';
   await axios.post(`${baseUrl}/account/v1/drop`, { amount, account });
 
-  await axios.post(`${baseUrl}/orderbook/v1/cancelOrder`, {ordersHash: ['0x1f612a2386b90278c62a23dd2a23dff78564e05730377f80fc48170ecd4b2c14']});
+  await axios.post(`${baseUrl}/orderbook/v1/cancelOrder`, {
+    ordersHash: [
+      '0x1f612a2386b90278c62a23dd2a23dff78564e05730377f80fc48170ecd4b2c14',
+    ],
+  });
 }
 
 main().catch(err => logger.error(err.stack));
