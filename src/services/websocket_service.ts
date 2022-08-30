@@ -383,7 +383,13 @@ export class WebsocketService {
 
       paginatedApiOrders.records
         .filter(record => record.metaData.filledAmount.lt(record.order.amount))
-        .forEach(order => this.eventManager.emitOrder(order));
+        .forEach(record =>
+          this.orderUpdate(
+            [record],
+            new Map([[requestId, subscriptionOpts]]),
+            new Map([[requestId, ws]])
+          )
+        );
     }
 
     if (subscriptionOpts.channel === MessageChannels.TradeHistory) {
