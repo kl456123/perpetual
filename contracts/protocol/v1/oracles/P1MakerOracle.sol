@@ -41,8 +41,6 @@ contract P1MakerOracle is Ownable, I_P1Oracle {
 
     // ============ Storage ============
 
-    address public _ORACLE_;
-
     // @dev Maps from the sender to the oracle address to use.
     mapping(address => address) public _ROUTER_;
 
@@ -58,8 +56,7 @@ contract P1MakerOracle is Ownable, I_P1Oracle {
      */
     function getPrice() external view returns (uint256) {
         // get the oracle address to read from
-        // address oracle = _ROUTER_[msg.sender];
-        address oracle = _ORACLE_;
+        address oracle = _ROUTER_[msg.sender];
 
         // revert if no oracle found
         require(oracle != address(0), 'Sender not authorized to get price');
@@ -90,7 +87,6 @@ contract P1MakerOracle is Ownable, I_P1Oracle {
      */
     function setRoute(address sender, address oracle) external onlyOwner {
         _ROUTER_[sender] = oracle;
-        _ORACLE_ = oracle;
         emit LogRouteSet(sender, oracle);
     }
 

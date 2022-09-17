@@ -27,8 +27,6 @@ import {I_P1Trader} from '../intf/I_P1Trader.sol';
 import {P1BalanceMath} from '../lib/P1BalanceMath.sol';
 import {P1Types} from '../lib/P1Types.sol';
 
-// import "hardhat/console.sol";
-
 /**
  * @title P1Trade
  * @author dYdX
@@ -140,12 +138,6 @@ contract P1Trade is P1FinalSettlement {
                 takerBalance.addToMargin(tradeResult.marginAmount);
                 takerBalance.subFromPosition(tradeResult.positionAmount);
             }
-
-            // console.log("maker: ", maker);
-            // console.log("taker: ", taker);
-            // console.log("marginAmount: ", tradeResult.marginAmount);
-            // console.log("positionAmount: ", tradeResult.positionAmount);
-            // console.log("isBuy: ", tradeResult.isBuy);
 
             // Store the new balances in storage.
             _BALANCES_[maker] = makerBalance;
