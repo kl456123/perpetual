@@ -9,6 +9,7 @@ import {
   address,
 } from '../src/types';
 import BigNumber from 'bignumber.js';
+import { WalletProvider } from '../src/wallet_provider';
 
 async function fillOrder(
   perpetual: Perpetual,
@@ -33,7 +34,6 @@ async function fillOrder(
     .initiate()
     .fillSignedOrder(sender, order, fillAmount, fillPrice, fillFee)
     .commit({ from: sender });
-  // console.log(txResult);
 }
 
 async function checkBalance(perpetual: Perpetual, makerAddr: address) {
@@ -81,8 +81,13 @@ async function main() {
   const takerWallet = provider.getSigner(
     '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'
   );
+  const walletProvider = new WalletProvider(provider);
+  walletProvider.unlockAll([
+    '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
+    '0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d',
+  ]);
 
-  const perpetual = new Perpetual(provider, market);
+  const perpetual = new Perpetual(walletProvider, market, 31337);
   const mintAmount = ethers.utils.parseUnits('1000', 6); // 1000 margin token
 
   // mint margin token first
@@ -110,7 +115,7 @@ async function main() {
 
   const FOUR_WEEKS_IN_SECONDS = 60 * 60 * 24 * 28;
   const expiration = new BigNumber(FOUR_WEEKS_IN_SECONDS);
-  const price = new BigNumber('187');
+  const price = new BigNumber('18700');
   const amount = new BigNumber(
     mintAmount.mul(4).div(price.toString()).toString()
   );

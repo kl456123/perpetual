@@ -1,13 +1,46 @@
-# Sample Hardhat Project
+# dydx demo
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a script that deploys that contract.
+- The project includes smart contracts and nodejs server to run on-chain and off-chain.
+  the server runs to order matching and provider apis for clients to submit signed orders. the contracts
+  is used for order mathcing validation on-chain and accounts settlement.
 
-Try running some of the following tasks:
+## Installation
 
-```shell
-npx hardhat help
-npx hardhat test
-GAS_REPORT=true npx hardhat test
-npx hardhat node
-npx hardhat run scripts/deploy.ts
+```bash
+yarn && yarn hardhat compile
 ```
+
+## Demo
+
+### simple demo
+
+```
+# start node
+yarn hardhat node
+
+# deploy contracts
+yarn hardhat run scripts/deploy.ts --network localhost
+
+# run demo script
+yarn ts-node scripts/demo.ts
+```
+
+### server
+
+- start worker to order matching automatically
+
+```bash
+# start node
+yarn hardhat node
+
+# deploy contracts
+yarn hardhat run scripts/deploy.ts --network localhost
+
+# start server
+yarn start
+
+# mock a orderbook
+yarn ts-node scripts/orderbook_demo.ts
+```
+
+## Development
