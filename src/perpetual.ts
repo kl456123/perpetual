@@ -28,7 +28,12 @@ export class Perpetual {
     chainId: number = ChainId.Mainnet,
     options: PerpetualOptions = {}
   ) {
-    this.contracts = new Contracts(provider, market, chainId);
+    this.contracts = new Contracts(
+      provider,
+      market,
+      chainId,
+      options.addressBook
+    );
     this.orders = new Orders(provider, this.contracts);
     this.api = new Api(this.orders, options.apiOptions);
     this.trade = new Trade(this.provider, this.contracts, this.orders);

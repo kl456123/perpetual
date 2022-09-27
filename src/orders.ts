@@ -8,8 +8,9 @@ import {
   SIGNATURE_TYPES,
   SignedOrder,
   Price,
+  OrderState,
 } from './types';
-import { ethers } from 'ethers';
+import { ethers, Signer } from 'ethers';
 import {
   getEIP712Hash,
   hashString,
@@ -59,7 +60,7 @@ export const ORDER_FLAGS = {
 export class Orders {
   constructor(
     protected provider: WalletProvider,
-    private contracts: Contracts
+    public contracts: Contracts
   ) {}
 
   get address(): address {
@@ -125,6 +126,17 @@ export class Orders {
       default:
         throw new Error(`Invalid signing method ${signingMethod}`);
     }
+  }
+
+  public async getSignedOrder(
+    order: Order,
+    signingMethod: SigningMethod
+  ): Promise<SignedOrder> {
+    const typedSignature = await this.signOrder(order, signingMethod);
+    return {
+      ...order,
+      typedSignature,
+    };
   }
 
   /**
@@ -222,5 +234,52 @@ export class Orders {
       ]
     );
     return combineHexStrings(orderData, fillData, signatureData);
+  }
+
+  /**
+   * Returns true if the order object has a non-null valid signature from the maker of the order.
+   */
+  public orderHasValidSignature(order: SignedOrder): boolean {
+    return hashHasValidSignature(
+      this.getOrderHash(order),
+      order.typedSignature,
+      order.maker
+    );
+  }
+
+  /**
+   * Gets the status and the current filled amount (in makerAmount) of all given orders.
+   */
+  public async getOrdersStatus(orders: Order[]): Promise<OrderState[]> {
+    const orderHashes = orders.map(order => this.getOrderHash(order));
+    const states = await this.contracts.p1Orders.getOrdersStatus(orderHashes);
+
+    return states.map(state => {
+      return {
+        status: state.status,
+        filledAmount: new BigNumber(state.filledAmount.toString()),
+      };
+    });
+  }
+
+  /**
+   * Sends an transaction to pre-approve an order on-chain (so that no signature is required when
+   * filling the order).
+   */
+  public async approveOrder(order: Order, signer: Signer): Promise<any> {
+    const stringifiedOrder = this.orderToSolidity(order);
+    return this.contracts.p1Orders
+      .connect(signer)
+      .approveOrder(stringifiedOrder);
+  }
+
+  /**
+   * Sends an transaction to cancel an order on-chain.
+   */
+  public async cancelOrder(order: Order, signer: Signer): Promise<any> {
+    const stringifiedOrder = this.orderToSolidity(order);
+    return this.contracts.p1Orders
+      .connect(signer)
+      .cancelOrder(stringifiedOrder);
   }
 }

@@ -84,6 +84,10 @@ export class BaseValue {
     return this.value.isPositive();
   }
 
+  public times(value: BigNumberable): BaseValue {
+    return new BaseValue(this.value.times(value));
+  }
+
   public isNegative(): boolean {
     return this.value.isNegative();
   }
@@ -272,6 +276,7 @@ export interface ApiOptions {
 export interface PerpetualOptions {
   defaultAccount?: address;
   apiOptions?: ApiOptions;
+  addressBook?: Record<string, string>;
 }
 
 export enum SIGNATURE_TYPES {

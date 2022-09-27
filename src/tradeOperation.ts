@@ -96,10 +96,11 @@ export class TradeOperation {
         to: this.contracts.perpetualProxy.address,
         data,
       };
-      return wallet.sendTransaction(tx);
+      const txRes = await wallet.sendTransaction(tx);
+      return txRes;
     } catch (error) {
       this.committed = false;
-      throw error;
+      throw error.error;
     }
   }
 

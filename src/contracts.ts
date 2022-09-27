@@ -11,8 +11,12 @@ import {
   P1MakerOracle__factory,
   P1FundingOracle,
   P1FundingOracle__factory,
+  P1LiquidatorProxy,
+  P1LiquidatorProxy__factory,
+  P1Deleveraging,
+  P1Deleveraging__factory,
 } from '../typechain-types';
-import { ethers } from 'ethers';
+import { ethers, Contract } from 'ethers';
 import { DeploymentsAddress } from './addresses';
 import deploymentsJSON from '../deployments/deployments.json';
 import { ApiMarketName } from './types';
@@ -25,6 +29,8 @@ export class Contracts {
   public marginToken: MockToken;
   public priceOracle: P1MakerOracle;
   public fundingOracle: P1FundingOracle;
+  public liquidatorProxy: P1LiquidatorProxy;
+  public p1Deleveraging: P1Deleveraging;
 
   public market: ApiMarketName;
   public networkId: number;
@@ -32,11 +38,26 @@ export class Contracts {
   constructor(
     provider: WalletProvider,
     market: ApiMarketName,
-    networkId: number
+    networkId: number,
+    addressBook?: Record<string, string>
   ) {
-    const addressBook = (deploymentsJSON as DeploymentsAddress)[networkId];
+    addressBook =
+      addressBook ?? (deploymentsJSON as DeploymentsAddress)[networkId];
+    this.loadContractFromAddressBook(addressBook, provider);
+    this.market = market;
+    this.networkId = networkId;
+  }
+
+  public loadContractFromAddressBook(
+    addressBook: Record<string, string>,
+    provider: WalletProvider
+  ) {
     this.p1Orders = P1Orders__factory.connect(
       addressBook.P1Orders,
+      provider.provider
+    );
+    this.p1Deleveraging = P1Deleveraging__factory.connect(
+      addressBook.P1Deleveraging,
       provider.provider
     );
     this.perpetualV1 = PerpetualV1__factory.connect(
@@ -61,7 +82,9 @@ export class Contracts {
       addressBook.P1FundingOracle,
       provider.provider
     );
-    this.market = market;
-    this.networkId = networkId;
+    this.liquidatorProxy = P1LiquidatorProxy__factory.connect(
+      addressBook.P1LiquidatorProxy,
+      provider.provider
+    );
   }
 }
