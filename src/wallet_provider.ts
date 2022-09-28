@@ -1,9 +1,9 @@
-import { ethers, Wallet } from 'ethers';
+import { ethers, Wallet, Signer } from 'ethers';
 import { logger } from './logger';
 
 export class WalletProvider {
   protected walletByAddress: Record<string, Wallet> = {};
-  constructor(public provider: ethers.providers.BaseProvider) {}
+  constructor(public provider: ethers.providers.JsonRpcProvider) {}
 
   public listAccounts() {
     return Object.keys(this.walletByAddress);
@@ -29,10 +29,11 @@ export class WalletProvider {
     return accountAddress.toLowerCase() in this.walletByAddress;
   }
 
-  public getSigner(accountAddress: string): Wallet {
-    if (!this.has(accountAddress)) {
-      throw new Error(`please unlock ${accountAddress} first!`);
+  public getSigner(accountAddress: string): Wallet | Signer {
+    if (this.has(accountAddress)) {
+      return this.walletByAddress[accountAddress.toLowerCase()];
     }
-    return this.walletByAddress[accountAddress.toLowerCase()];
+    return this.provider.getSigner(accountAddress);
+    // throw new Error(`please unlock ${accountAddress} first!`);
   }
 }

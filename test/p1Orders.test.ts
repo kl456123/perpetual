@@ -19,7 +19,6 @@ import { Orders } from '../src/orders';
 import { Test_ChainlinkAggregator } from '../typechain-types';
 import { WalletProvider } from '../src/wallet_provider';
 import { Signer } from 'ethers';
-import { Contracts } from '../src/contracts';
 import { boolToBytes32 } from '../src/utils';
 import { Perpetual } from '../src/perpetual';
 
@@ -47,14 +46,8 @@ const fullFlagOrder: Order = {
 describe('P1Orders', () => {
   async function deployFixture() {
     const signers = await ethers.getSigners();
-    const maker = signers[5]; // 0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba
-    const taker = signers[1]; // 0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d
-    const privateKeys = [
-      '0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba',
-      '0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d',
-      '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
-      '0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97',
-    ];
+    const maker = signers[5];
+    const taker = signers[1];
 
     defaultOrder.maker = fullFlagOrder.maker = maker.address;
     defaultOrder.taker = fullFlagOrder.taker = taker.address;
@@ -62,7 +55,6 @@ describe('P1Orders', () => {
     const otherUser = signers[8];
     const { chainId } = await ethers.provider.getNetwork();
     const walletProvider = new WalletProvider(ethers.provider);
-    walletProvider.unlockAll(privateKeys);
 
     const addressBook = await deploy(false);
     const perpetual = new Perpetual(

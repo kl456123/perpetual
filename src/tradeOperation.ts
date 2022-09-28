@@ -5,16 +5,18 @@ import {
   Price,
   Fee,
   SendOptions,
+  BigNumberable,
 } from './types';
 import { Orders } from './orders';
 import { WalletProvider } from './wallet_provider';
-import { ethers } from 'ethers';
 import {
   TransactionResponse,
   TransactionRequest,
 } from '@ethersproject/abstract-provider';
 import { Contracts } from './contracts';
 import BigNumber from 'bignumber.js';
+import { makeLiquidateTradeData } from './liquidation';
+import { makeDeleverageTradeData } from './deleverage';
 
 interface TempTradeArg {
   maker: address;
@@ -60,6 +62,36 @@ export class TradeOperation {
     });
   }
 
+  public liquidate(
+    maker: address,
+    taker: address,
+    amount: BigNumberable,
+    isBuy: boolean,
+    allOrNothing: boolean
+  ): this {
+    return this.addTradeArg({
+      maker,
+      taker,
+      data: makeLiquidateTradeData(amount, isBuy, allOrNothing),
+      trader: this.contracts.p1Liquidation.address,
+    });
+  }
+
+  public deleverage(
+    maker: address,
+    taker: address,
+    amount: BigNumberable,
+    isBuy: boolean,
+    allOrNothing: boolean
+  ): this {
+    return this.addTradeArg({
+      maker,
+      taker,
+      data: makeDeleverageTradeData(amount, isBuy, allOrNothing),
+      trader: this.contracts.p1Deleveraging.address,
+    });
+  }
+
   public async commit(options: SendOptions): Promise<TransactionResponse> {
     if (this.committed) {
       throw new Error('Operation already committed');
@@ -100,7 +132,7 @@ export class TradeOperation {
       return txRes;
     } catch (error) {
       this.committed = false;
-      throw error.error;
+      throw error;
     }
   }
 

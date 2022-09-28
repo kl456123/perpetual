@@ -481,3 +481,22 @@ export enum EventType {
   Deposit = 'Deposit',
   Withdraw = 'Withdraw',
 }
+
+export class Balance {
+  public margin: BigNumber;
+  public position: BigNumber;
+
+  constructor(margin: BigNumberable, position: BigNumberable) {
+    this.margin = new BigNumber(margin);
+    this.position = new BigNumber(position);
+  }
+
+  static fromSolidity(struct: BalanceStruct): Balance {
+    const marginBN = new BigNumber(struct.margin);
+    const positionBN = new BigNumber(struct.position);
+    return new Balance(
+      struct.marginIsPositive ? marginBN : marginBN.negated(),
+      struct.positionIsPositive ? positionBN : positionBN.negated()
+    );
+  }
+}

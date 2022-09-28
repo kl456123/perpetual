@@ -1,6 +1,7 @@
 import { ethers } from 'hardhat';
 import { DEPLOYER_ACCOUNT, DELEVERAGING_ACCOUNT } from '../src/config';
 import { saveDeploymentsAddress, DeploymentsAddress } from '../src/addresses';
+import { Contract } from 'ethers';
 
 export enum Network {
   Ethereum = 1,
@@ -9,6 +10,7 @@ export enum Network {
   OKCTest = 67,
   Kovan = 42,
   Goerli = 420,
+  Dev = 31337, // hardhat network
 }
 
 export function getDeployerAddress(network: Network) {
@@ -139,10 +141,15 @@ async function deployOracles(
   // set fake price in decimal 18
   await chainlinkOracle.setAnswer(ethers.utils.parseUnits('18200', 18));
 
-  const fundingOracle = await deployContract(
-    'P1FundingOracle',
-    getFundingRateProviderAddress(network)
-  );
+  let fundingOracle: Contract;
+  if (network === Network.Dev) {
+    fundingOracle = await deployContract('Test_P1Funder');
+  } else {
+    fundingOracle = await deployContract(
+      'P1FundingOracle',
+      getFundingRateProviderAddress(network)
+    );
+  }
 
   const p1ChainlinkOracle = await deployContract(
     'P1ChainlinkOracle',

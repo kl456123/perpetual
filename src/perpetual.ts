@@ -6,6 +6,7 @@ import {
   PerpetualOptions,
   ApiBalance,
   ApiAccount,
+  Balance,
 } from './types';
 import { Contracts } from './contracts';
 import { Api } from './api';
@@ -14,6 +15,7 @@ import { Trade } from './trade';
 import { PriceOracle } from './price_oracle';
 import { FundingOracle } from './funding_oracle';
 import { WalletProvider } from './wallet_provider';
+import { Liquidation } from './liquidation';
 
 export class Perpetual {
   public contracts: Contracts;
@@ -22,6 +24,8 @@ export class Perpetual {
   public trade: Trade;
   public priceOracle: PriceOracle;
   public fundingOracle: FundingOracle;
+  public liquidation: Liquidation;
+
   constructor(
     public provider: WalletProvider,
     market: ApiMarketName,
@@ -39,6 +43,7 @@ export class Perpetual {
     this.trade = new Trade(this.provider, this.contracts, this.orders);
     this.priceOracle = new PriceOracle(this.contracts);
     this.fundingOracle = new FundingOracle(this.contracts);
+    this.liquidation = new Liquidation(this.contracts);
   }
 
   async getAccount(account: string): Promise<ApiAccount> {
@@ -67,5 +72,17 @@ export class Perpetual {
       owner: account,
       balances: { [this.contracts.market]: apiBalance },
     };
+  }
+
+  public async getAccountBalance(account: string): Promise<Balance> {
+    const balance = await this.contracts.perpetualProxy.getAccountBalance(
+      account
+    );
+
+    return Balance.fromSolidity({
+      ...balance,
+      margin: balance.margin.toString(),
+      position: balance.position.toString(),
+    });
   }
 }

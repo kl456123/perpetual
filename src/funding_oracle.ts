@@ -1,6 +1,7 @@
 import { Contracts } from './contracts';
 import { BigNumberable, BaseValue, FundingRate } from './types';
 import { BigNumber } from 'bignumber.js';
+import { Signer } from 'ethers';
 
 export class FundingOracle {
   private contracts: Contracts;
@@ -26,5 +27,13 @@ export class FundingOracle {
   public async getFundingRate(): Promise<FundingRate> {
     const oneSecondFunding = await this.getFunding(1);
     return new FundingRate(oneSecondFunding.value);
+  }
+  public async setFunding(newFunding: BaseValue, fundingRateProvider: Signer) {
+    return this.contracts.fundingOracle
+      .connect(fundingRateProvider)
+      .setFundingRate({
+        isPositive: !newFunding.isNegative(), // isPositive
+        value: newFunding.toSolidity(),
+      });
   }
 }

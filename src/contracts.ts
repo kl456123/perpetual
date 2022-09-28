@@ -15,6 +15,8 @@ import {
   P1LiquidatorProxy__factory,
   P1Deleveraging,
   P1Deleveraging__factory,
+  P1Liquidation,
+  P1Liquidation__factory,
 } from '../typechain-types';
 import { ethers, Contract } from 'ethers';
 import { DeploymentsAddress } from './addresses';
@@ -31,12 +33,13 @@ export class Contracts {
   public fundingOracle: P1FundingOracle;
   public liquidatorProxy: P1LiquidatorProxy;
   public p1Deleveraging: P1Deleveraging;
+  public p1Liquidation: P1Liquidation;
 
   public market: ApiMarketName;
   public networkId: number;
 
   constructor(
-    provider: WalletProvider,
+    public provider: WalletProvider,
     market: ApiMarketName,
     networkId: number,
     addressBook?: Record<string, string>
@@ -54,6 +57,11 @@ export class Contracts {
   ) {
     this.p1Orders = P1Orders__factory.connect(
       addressBook.P1Orders,
+      provider.provider
+    );
+
+    this.p1Liquidation = P1Liquidation__factory.connect(
+      addressBook.P1Liquidation,
       provider.provider
     );
     this.p1Deleveraging = P1Deleveraging__factory.connect(
