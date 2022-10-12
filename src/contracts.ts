@@ -27,7 +27,7 @@ import { WalletProvider } from './wallet_provider';
 export class Contracts {
   public p1Orders: P1Orders;
   public perpetualV1: PerpetualV1;
-  public perpetualProxy: ethers.Contract;
+  public perpetualProxy: PerpetualV1;
   public marginToken: MockToken;
   public priceOracle: P1MakerOracle;
   public fundingOracle: P1FundingOracle;
@@ -73,9 +73,8 @@ export class Contracts {
       provider.provider
     );
 
-    this.perpetualProxy = new ethers.Contract(
+    this.perpetualProxy = PerpetualV1__factory.connect(
       addressBook.PerpetualProxy,
-      PerpetualV1__factory.abi,
       provider.provider
     );
     this.marginToken = MockToken__factory.connect(

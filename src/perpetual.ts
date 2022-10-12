@@ -16,6 +16,7 @@ import { PriceOracle } from './price_oracle';
 import { FundingOracle } from './funding_oracle';
 import { WalletProvider } from './wallet_provider';
 import { Liquidation } from './liquidation';
+import { Getters } from './getters';
 
 export class Perpetual {
   public contracts: Contracts;
@@ -25,6 +26,7 @@ export class Perpetual {
   public priceOracle: PriceOracle;
   public fundingOracle: FundingOracle;
   public liquidation: Liquidation;
+  public getters: Getters;
 
   constructor(
     public provider: WalletProvider,
@@ -39,6 +41,7 @@ export class Perpetual {
       options.addressBook
     );
     this.orders = new Orders(provider, this.contracts);
+    this.getters = new Getters(this.contracts);
     this.api = new Api(this.orders, options.apiOptions);
     this.trade = new Trade(this.provider, this.contracts, this.orders);
     this.priceOracle = new PriceOracle(this.contracts);

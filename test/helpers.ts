@@ -1,4 +1,6 @@
 import { ethers } from 'hardhat';
+import { deploy } from '../scripts/helpers';
+import { WalletProvider } from '../src/wallet_provider';
 import { BigNumberish, Signer, Contract } from 'ethers';
 import { BigNumber } from 'bignumber.js';
 import {
@@ -9,8 +11,10 @@ import {
   Order,
   Price,
   Fee,
+  ApiMarketName,
+  BaseValue,
 } from '../src/types';
-import { Provider } from '@ethersproject/providers';
+import { Provider, JsonRpcProvider } from '@ethersproject/providers';
 import { Perpetual } from '../src/perpetual';
 import { PRICES, ADDRESSES, INTEGERS, FEES } from '../src/constants';
 import { expect } from 'chai';
@@ -235,4 +239,74 @@ export async function expectPositions(
 // For solidity function calls that violate require()
 export async function expectThrow(promise: Promise<any>, reason: string) {
   await expect(promise).to.be.revertedWith(reason);
+}
+
+export async function getPerpetual(
+  provider: JsonRpcProvider,
+  market = ApiMarketName.PBTC_USDC
+) {
+  const { chainId } = await provider.getNetwork();
+  const addressBook = await deploy(false);
+  const walletProvider = new WalletProvider(provider);
+  const perpetual = new Perpetual(walletProvider, market, chainId, {
+    addressBook,
+  });
+  const testContracts = getTestContracts(addressBook, ethers.provider);
+  return { perpetual, testContracts };
+}
+
+/**
+ * Compare two BaseValue's according to the precision level used in Solidity (18 decimals).
+ */
+export function expectBaseValueEqual(
+  arg1: BaseValue,
+  arg2: BaseValue,
+  message?: string
+) {
+  const value1 = arg1.value.decimalPlaces(18);
+  const value2 = arg2.value.decimalPlaces(18);
+  expect(value1.toString(), message).eq(value2.toString());
+}
+
+/**
+ * Compare two BaseValue's according to the precision level used in Solidity (18 decimals).
+ */
+export function expectBaseValueNotEqual(
+  arg1: BaseValue,
+  arg2: BaseValue,
+  message?: string
+) {
+  const value1 = arg1.value.decimalPlaces(18);
+  const value2 = arg2.value.decimalPlaces(18);
+  expect(value1, message).not.to.equal(value2);
+}
+
+/**
+ * Check that the contract has a surplus (or deficit) relative to the current margin balances.
+ *
+ * The surplus/deficit could be due to unsettled interest or due to rounding errors in settlement.
+ */
+export async function expectContractSurplus(
+  perpetual: Perpetual,
+  accounts: address[],
+  expectedSurplus: BigNumberable
+): Promise<void> {
+  const marginBalances = await Promise.all(
+    accounts.map((account: address) => {
+      return perpetual
+        .getAccountBalance(account)
+        .then(balance => balance.margin);
+    })
+  );
+  const accountSumMargin = marginBalances.reduce(
+    (a, b) => a.plus(b),
+    INTEGERS.ZERO
+  );
+  const perpetualTokenBalance = await perpetual.contracts.marginToken.balanceOf(
+    perpetual.contracts.perpetualProxy.address
+  );
+  const actualSurplus = new BigNumber(perpetualTokenBalance.toString()).minus(
+    accountSumMargin
+  );
+  expect(actualSurplus, 'contract margin token surplus').eq(expectedSurplus);
 }

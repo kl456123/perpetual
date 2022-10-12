@@ -18,6 +18,11 @@ export interface BalanceStruct {
   position: string;
 }
 
+export interface Index {
+  timestamp: BigNumber;
+  baseValue: BaseValue;
+}
+
 export interface FundingRateStruct {
   timestamp: BigNumber;
   isPositive: boolean;
