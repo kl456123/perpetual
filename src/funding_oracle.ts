@@ -1,5 +1,10 @@
 import { Contracts } from './contracts';
-import { BigNumberable, BaseValue, FundingRate } from './types';
+import {
+  BigNumberable,
+  BaseValue,
+  FundingRate,
+  FundingRateBounds,
+} from './types';
 import { BigNumber } from 'bignumber.js';
 import { Signer } from 'ethers';
 
@@ -36,4 +41,30 @@ export class FundingOracle {
         value: newFunding.toSolidity(),
       });
   }
+
+  // ============ Getters ============
+
+  public async getBounds(): Promise<FundingRateBounds> {
+    const results = await Promise.all([
+      this.contracts.fundingOracle.MAX_ABS_VALUE(),
+      this.contracts.fundingOracle.MAX_ABS_DIFF_PER_SECOND(),
+    ]);
+    const [maxAbsValue, maxAbsDiffPerSecond] = results.map(s => {
+      return FundingRate.fromSolidity(s.toString());
+    });
+    return { maxAbsValue, maxAbsDiffPerSecond };
+  }
+
+    /**
+     * Simulates the result of calling setFundingRate() using `eth_call`.
+     */
+    public async getBoundedFundingRate(
+      fundingRate: FundingRate,
+      fundingRateProvider: Signer,
+    ): Promise<FundingRate> {
+      const result = await this.contracts.fundingOracle.connect(fundingRateProvider).callStatic.setFundingRate(
+          fundingRate.toSoliditySignedInt(),
+        );
+      return FundingRate.fromSolidity(result.value.toString(), result.isPositive);
+    }
 }

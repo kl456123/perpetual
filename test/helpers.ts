@@ -3,6 +3,7 @@ import { deploy } from '../scripts/helpers';
 import { WalletProvider } from '../src/wallet_provider';
 import { BigNumberish, Signer, Contract } from 'ethers';
 import { BigNumber } from 'bignumber.js';
+import { TestPerpetual } from './modules/test_perpetual';
 import {
   address,
   SigningMethod,
@@ -20,23 +21,6 @@ import { PRICES, ADDRESSES, INTEGERS, FEES } from '../src/constants';
 import { expect } from 'chai';
 
 import {
-  P1Orders,
-  P1Orders__factory,
-  PerpetualV1,
-  PerpetualV1__factory,
-  PerpetualProxy,
-  PerpetualProxy__factory,
-  MockToken,
-  MockToken__factory,
-  P1MakerOracle,
-  P1MakerOracle__factory,
-  P1FundingOracle,
-  P1FundingOracle__factory,
-  P1LiquidatorProxy,
-  P1LiquidatorProxy__factory,
-  P1Deleveraging,
-  P1Deleveraging__factory,
-  Test_ChainlinkAggregator,
   Test_ChainlinkAggregator__factory,
 } from '../typechain-types';
 
@@ -255,6 +239,19 @@ export async function getPerpetual(
   return { perpetual, testContracts };
 }
 
+export async function getTestPerpetual(
+  provider: JsonRpcProvider,
+  market = ApiMarketName.PBTC_USDC
+) {
+  const { chainId } = await provider.getNetwork();
+  const addressBook = await deploy(false);
+  const walletProvider = new WalletProvider(provider);
+  const testPerpetual = new TestPerpetual(walletProvider, market, chainId, {
+    addressBook,
+  });
+  return testPerpetual;
+}
+
 /**
  * Compare two BaseValue's according to the precision level used in Solidity (18 decimals).
  */
@@ -278,7 +275,7 @@ export function expectBaseValueNotEqual(
 ) {
   const value1 = arg1.value.decimalPlaces(18);
   const value2 = arg2.value.decimalPlaces(18);
-  expect(value1, message).not.to.equal(value2);
+  expect(value1.toString(), message).not.to.equal(value2.toString());
 }
 
 /**

@@ -11,6 +11,8 @@ import {
   P1MakerOracle__factory,
   P1FundingOracle,
   P1FundingOracle__factory,
+  P1ChainlinkOracle,
+  P1ChainlinkOracle__factory,
   P1LiquidatorProxy,
   P1LiquidatorProxy__factory,
   P1Deleveraging,
@@ -29,7 +31,7 @@ export class Contracts {
   public perpetualV1: PerpetualV1;
   public perpetualProxy: PerpetualV1;
   public marginToken: MockToken;
-  public priceOracle: P1MakerOracle;
+  public priceOracle: P1ChainlinkOracle;
   public fundingOracle: P1FundingOracle;
   public liquidatorProxy: P1LiquidatorProxy;
   public p1Deleveraging: P1Deleveraging;
@@ -81,8 +83,8 @@ export class Contracts {
       addressBook.MarginToken,
       provider.provider
     );
-    this.priceOracle = P1MakerOracle__factory.connect(
-      addressBook.P1MakerOracle,
+    this.priceOracle = P1ChainlinkOracle__factory.connect(
+      addressBook.P1ChainlinkOracle,
       provider.provider
     );
     this.fundingOracle = P1FundingOracle__factory.connect(

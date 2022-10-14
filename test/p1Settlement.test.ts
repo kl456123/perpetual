@@ -4,7 +4,7 @@ import { expect } from 'chai';
 import { BigNumber } from 'bignumber.js';
 import { WalletProvider } from '../src/wallet_provider';
 import { deploy } from '../scripts/helpers';
-import { Perpetual } from '../src/perpetual';
+import { TestPerpetual } from './modules/test_perpetual';
 import { INTEGERS } from '../src/constants';
 import {
   mintAndDeposit,
@@ -16,6 +16,7 @@ import {
   expectBaseValueEqual,
   expectMarginBalances,
   expectContractSurplus,
+  getTestPerpetual,
 } from './helpers';
 import { mineAvgBlock } from './evm';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/dist/src/signer-with-address';
@@ -30,8 +31,7 @@ describe('P1Settlement', () => {
   let otherAccountA: address;
   let otherAccountB: address;
   let otherAccountC: address;
-  let perpetual: Perpetual;
-  let testContracts: ReturnType<typeof getTestContracts>;
+  let perpetual: TestPerpetual;
 
   let adminSigner: SignerWithAddress;
   let longSigner: SignerWithAddress;
@@ -55,9 +55,7 @@ describe('P1Settlement', () => {
     otherAccountBSigner = signers[5];
     otherAccountCSigner = signers[6];
 
-    const ctx = await getPerpetual(ethers.provider);
-    perpetual = ctx.perpetual;
-    testContracts = ctx.testContracts;
+    perpetual = await getTestPerpetual(ethers.provider);
 
     // Set up initial balances:
     // +---------+--------+----------+
@@ -67,9 +65,10 @@ describe('P1Settlement', () => {
     // | short   |   2000 |      -10 |
     // +---------+--------+----------+
     await Promise.all([
-      testContracts.testChainlinkAggregator
-        .connect(adminSigner)
-        .setAnswer(new Price(100).toSolidity()),
+    perpetual.testing.chainlinkAggregator.setAnswer(
+      new Price(100),
+      adminSigner
+    ),
       mintAndDeposit(
         perpetual.contracts.marginToken,
         perpetual.contracts.perpetualProxy,
@@ -103,7 +102,7 @@ describe('P1Settlement', () => {
 
   describe('_loadContext()', () => {
     it('Updates the global index for a positive funding rate', async () => {
-      await perpetual.fundingOracle.setFunding(
+      await perpetual.testing.funder.setFunding(
         new BaseValue(0.005),
         adminSigner
       );
@@ -114,7 +113,7 @@ describe('P1Settlement', () => {
     });
 
     it('Updates the global index for a negative funding rate', async () => {
-      await perpetual.fundingOracle.setFunding(
+      await perpetual.testing.funder.setFunding(
         new BaseValue(-0.005),
         adminSigner
       );
@@ -125,34 +124,34 @@ describe('P1Settlement', () => {
     });
 
     it('Updates the global index over time with a variable funding rate and price', async () => {
-      await perpetual.fundingOracle.setFunding(
+      await perpetual.testing.funder.setFunding(
         new BaseValue(0.000001),
         adminSigner
       );
       let txResult = await triggerIndexUpdate(otherAccountASigner);
       await expectIndexUpdated(new BaseValue('0.0001'), txResult.blockNumber);
 
-      await perpetual.fundingOracle.setFunding(new BaseValue(4), adminSigner);
+      await perpetual.testing.funder.setFunding(new BaseValue(4), adminSigner);
       txResult = await triggerIndexUpdate(otherAccountASigner);
       await expectIndexUpdated(new BaseValue('400.0001'), txResult.blockNumber);
 
-      await testContracts.testChainlinkAggregator
-        .connect(adminSigner)
-        .setAnswer(new Price(40).toSolidity()),
-        (txResult = await triggerIndexUpdate(otherAccountASigner));
+      await perpetual.testing.chainlinkAggregator
+        .setAnswer(new Price(40), adminSigner);
+
+      txResult = await triggerIndexUpdate(otherAccountASigner);
       await expectIndexUpdated(new BaseValue('560.0001'), txResult.blockNumber);
 
-      await perpetual.fundingOracle.setFunding(
+      await perpetual.testing.funder.setFunding(
         new BaseValue(-10.5),
         adminSigner
       );
       txResult = await triggerIndexUpdate(otherAccountASigner);
       await expectIndexUpdated(new BaseValue('140.0001'), txResult.blockNumber);
 
-      await testContracts.testChainlinkAggregator
-        .connect(adminSigner)
-        .setAnswer(new Price(0.00001).toSolidity()),
-        (txResult = await triggerIndexUpdate(otherAccountASigner));
+      await perpetual.testing.chainlinkAggregator
+        .setAnswer(new Price(0.00001), adminSigner),
+
+        txResult = await triggerIndexUpdate(otherAccountASigner);
       await expectIndexUpdated(
         new BaseValue('139.999995'),
         txResult.blockNumber
@@ -169,9 +168,8 @@ describe('P1Settlement', () => {
       // | otherAccountC |     10 |       -4 |
       // +---------------+--------+----------+
       await Promise.all([
-        testContracts.testChainlinkAggregator
-          .connect(adminSigner)
-          .setAnswer(new Price(1).toSolidity()),
+        perpetual.testing.chainlinkAggregator
+          .setAnswer(new Price(1), adminSigner),
         mintAndDeposit(
           perpetual.contracts.marginToken,
           perpetual.contracts.perpetualProxy,
@@ -216,7 +214,7 @@ describe('P1Settlement', () => {
       // | otherAccountB |     10 |       -3 |           0 |          2.1 |
       // | otherAccountC |     10 |       -4 |           0 |          2.8 |
       // +---------------+--------+----------+-------------+--------------+
-      await perpetual.fundingOracle.setFunding(new BaseValue(0.7), adminSigner);
+      await perpetual.testing.funder.setFunding(new BaseValue(0.7), adminSigner);
       await triggerIndexUpdate(otherAccountASigner);
       await expectMarginBalances(perpetual, [otherAccountA], [5], false);
 
@@ -231,7 +229,7 @@ describe('P1Settlement', () => {
       // | otherAccountC |     15 |       -4 |         1.4 |            0 |
       // +---------------+--------+----------+-------------+--------------+
       await triggerIndexUpdate(otherAccountASigner);
-      await perpetual.fundingOracle.setFunding(new BaseValue(0), adminSigner);
+      await perpetual.testing.funder.setFunding(new BaseValue(0), adminSigner);
       await triggerIndexUpdate(otherAccountBSigner);
       await triggerIndexUpdate(otherAccountCSigner);
 
@@ -264,7 +262,7 @@ describe('P1Settlement', () => {
       // +---------------+-------------+-----------+--------------+------------+
 
       // Accumulate interest and settle the long account.
-      await perpetual.fundingOracle.setFunding(
+      await perpetual.testing.funder.setFunding(
         new BaseValue(0.05),
         adminSigner
       );
@@ -275,7 +273,7 @@ describe('P1Settlement', () => {
         'LogAccountSettled'
       );
       // .withArgs(long, false, expectedInterest.toFixed(0));
-      await perpetual.fundingOracle.setFunding(new BaseValue(0), adminSigner);
+      await perpetual.testing.funder.setFunding(new BaseValue(0), adminSigner);
 
       // Check balances after settlement of the long. Note that the short is not yet settled.
       await expectBalances(
@@ -307,14 +305,14 @@ describe('P1Settlement', () => {
 
     it('Can settle accounts with a different frequency for each account', async () => {
       // Accumulate interest and settle the long account.
-      await perpetual.fundingOracle.setFunding(
+      await perpetual.testing.funder.setFunding(
         new BaseValue(0.05),
         adminSigner
       );
       for (let i = 0; i < 9; i += 1) {
         await triggerIndexUpdate(longSigner);
       }
-      await perpetual.fundingOracle.setFunding(new BaseValue(0), adminSigner);
+      await perpetual.testing.funder.setFunding(new BaseValue(0), adminSigner);
 
       const expectedInterest = new BigNumber('450'); // 0.05 * 100 * 10 * 9
 
@@ -352,7 +350,7 @@ describe('P1Settlement', () => {
       const localIndexBefore = await perpetual.getters.getAccountIndex(
         otherAccountA
       );
-      await perpetual.fundingOracle.setFunding(
+      await perpetual.testing.funder.setFunding(
         new BaseValue(0.05),
         adminSigner
       );

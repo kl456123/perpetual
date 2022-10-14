@@ -1,30 +1,21 @@
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
-import { Signer } from 'ethers';
 import {
   mintAndDeposit,
-  getTestContracts,
   buy,
   sell,
   expectBalances,
   expectPositions,
   expectThrow,
+  getTestPerpetual,
 } from './helpers';
 import { BigNumber } from 'bignumber.js';
-import { WalletProvider } from '../src/wallet_provider';
-import { Perpetual } from '../src/perpetual';
-import { deploy } from '../scripts/helpers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/dist/src/signer-with-address';
 import { mineAvgBlock } from './evm';
+import { TestPerpetual } from './modules/test_perpetual';
 import {
   Price,
-  Order,
-  Fee,
-  SignedOrder,
-  SigningMethod,
-  OrderStatus,
-  ApiMarketName,
   address,
   BigNumberable,
   BaseValue,
@@ -45,8 +36,7 @@ describe('P1Liquidation', () => {
   let short: SignerWithAddress;
   let thirdParty: SignerWithAddress;
   let globalOperator: SignerWithAddress;
-  let perpetual: Perpetual;
-  let testContracts: ReturnType<typeof getTestContracts>;
+  let perpetual: TestPerpetual;
 
   async function deployFixture() {
     const signers = await ethers.getSigners();
@@ -56,17 +46,7 @@ describe('P1Liquidation', () => {
     thirdParty = signers[3];
     globalOperator = signers[4];
 
-    const { chainId } = await ethers.provider.getNetwork();
-    const walletProvider = new WalletProvider(ethers.provider);
-
-    const addressBook = await deploy(false);
-    perpetual = new Perpetual(
-      walletProvider,
-      ApiMarketName.PBTC_USDC,
-      chainId,
-      { addressBook }
-    );
-    testContracts = getTestContracts(addressBook, ethers.provider);
+    perpetual = await getTestPerpetual(ethers.provider);
 
     // Set up initial balances:
     // +---------+--------+----------+-------------------+
@@ -76,9 +56,8 @@ describe('P1Liquidation', () => {
     // | short   |   1500 |      -10 |              150% |
     // +---------+--------+----------+-------------------+
     await Promise.all([
-      testContracts.testChainlinkAggregator
-        .connect(admin)
-        .setAnswer(initialPrice.toSolidity()),
+      perpetual.testing.chainlinkAggregator
+        .setAnswer(initialPrice, admin),
       perpetual.contracts.perpetualProxy
         .connect(admin)
         .setGlobalOperator(globalOperator.address, true),
@@ -128,9 +107,8 @@ describe('P1Liquidation', () => {
 
   describe('trade(), via PerpetualV1', () => {
     it('Succeeds partially liquidating a long position', async () => {
-      await testContracts.testChainlinkAggregator
-        .connect(admin)
-        .setAnswer(longUndercollateralizedPrice.toSolidity());
+      await perpetual.testing.chainlinkAggregator
+        .setAnswer(longUndercollateralizedPrice, admin);
       const liquidationAmount = positionSize.div(2);
       await expect(liquidate(long.address, short.address, liquidationAmount))
         .to.emit(perpetual.contracts.p1Liquidation, 'LogLiquidated')
@@ -151,9 +129,8 @@ describe('P1Liquidation', () => {
     });
 
     it('Succeeds partially liquidating a short position', async () => {
-      await testContracts.testChainlinkAggregator
-        .connect(admin)
-        .setAnswer(shortUndercollateralizedPrice.toSolidity());
+      await perpetual.testing.chainlinkAggregator
+        .setAnswer(shortUndercollateralizedPrice, admin);
       const liquidationAmount = positionSize.div(2);
       await expect(liquidate(short.address, long.address, liquidationAmount))
         .to.emit(perpetual.contracts.p1Liquidation, 'LogLiquidated')
@@ -172,9 +149,8 @@ describe('P1Liquidation', () => {
       );
     });
     it('Succeeds fully liquidating an undercollateralized long position', async () => {
-      await testContracts.testChainlinkAggregator
-        .connect(admin)
-        .setAnswer(longUndercollateralizedPrice.toSolidity());
+      await perpetual.testing.chainlinkAggregator
+        .setAnswer(longUndercollateralizedPrice, admin);
       await liquidate(long.address, short.address, positionSize);
       await expectBalances(
         perpetual,
@@ -185,9 +161,8 @@ describe('P1Liquidation', () => {
     });
 
     it('Succeeds fully liquidating an undercollateralized short position', async () => {
-      await testContracts.testChainlinkAggregator
-        .connect(admin)
-        .setAnswer(shortUndercollateralizedPrice.toSolidity());
+      await perpetual.testing.chainlinkAggregator
+        .setAnswer(shortUndercollateralizedPrice, admin);
       await liquidate(short.address, long.address, positionSize);
       await expectBalances(
         perpetual,
@@ -198,9 +173,8 @@ describe('P1Liquidation', () => {
     });
 
     it('Succeeds fully liquidating an underwater long position', async () => {
-      await testContracts.testChainlinkAggregator
-        .connect(admin)
-        .setAnswer(longUnderwaterPrice.toSolidity());
+      await perpetual.testing.chainlinkAggregator
+        .setAnswer(longUnderwaterPrice, admin);
       await liquidate(long.address, short.address, positionSize);
       await expectBalances(
         perpetual,
@@ -210,9 +184,8 @@ describe('P1Liquidation', () => {
       );
     });
     it('Succeeds fully liquidating an underwater short position', async () => {
-      await testContracts.testChainlinkAggregator
-        .connect(admin)
-        .setAnswer(shortUnderwaterPrice.toSolidity());
+      await perpetual.testing.chainlinkAggregator
+        .setAnswer(shortUnderwaterPrice, admin);
       const txResult = await liquidate(
         short.address,
         long.address,
@@ -227,9 +200,8 @@ describe('P1Liquidation', () => {
     });
 
     it('Succeeds with all-or-nothing', async () => {
-      await testContracts.testChainlinkAggregator
-        .connect(admin)
-        .setAnswer(longUndercollateralizedPrice.toSolidity());
+      await perpetual.testing.chainlinkAggregator
+        .setAnswer(longUndercollateralizedPrice, admin);
       await liquidate(long.address, short.address, positionSize, {
         allOrNothing: true,
       });
@@ -241,9 +213,8 @@ describe('P1Liquidation', () => {
       );
     });
     it('Succeeds when the amount is zero and the maker is long', async () => {
-      await testContracts.testChainlinkAggregator
-        .connect(admin)
-        .setAnswer(longUndercollateralizedPrice.toSolidity());
+      await perpetual.testing.chainlinkAggregator
+        .setAnswer(longUndercollateralizedPrice, admin);
       await liquidate(long.address, short.address, 0);
       await expectBalances(
         perpetual,
@@ -254,9 +225,8 @@ describe('P1Liquidation', () => {
     });
 
     it('Succeeds when the amount is zero and the maker is short', async () => {
-      await testContracts.testChainlinkAggregator
-        .connect(admin)
-        .setAnswer(shortUndercollateralizedPrice.toSolidity());
+      await perpetual.testing.chainlinkAggregator
+        .setAnswer(shortUndercollateralizedPrice, admin);
       await liquidate(short.address, long.address, 0);
       await expectBalances(
         perpetual,
@@ -290,9 +260,8 @@ describe('P1Liquidation', () => {
       // | short   |   1350 |       -9 |
 
       // Liquidate the short position.
-      await testContracts.testChainlinkAggregator
-        .connect(admin)
-        .setAnswer(shortUndercollateralizedPrice.toSolidity());
+      await perpetual.testing.chainlinkAggregator
+        .setAnswer(shortUndercollateralizedPrice, admin);
       await liquidate(short.address, long.address, positionSize);
 
       // The actual amount executed should be bounded by the maker position.
@@ -328,9 +297,8 @@ describe('P1Liquidation', () => {
       // | short   |   1500 |      -10 |
 
       // Liquidate the short position.
-      await testContracts.testChainlinkAggregator
-        .connect(admin)
-        .setAnswer(shortUndercollateralizedPrice.toSolidity());
+      await perpetual.testing.chainlinkAggregator
+        .setAnswer(shortUndercollateralizedPrice, admin);
       await liquidate(short.address, long.address, positionSize);
 
       // Liquidiation amount should NOT be bounded by the taker position.
@@ -343,9 +311,8 @@ describe('P1Liquidation', () => {
     });
 
     it('Cannot liquidate a long position that is not undercollateralized', async () => {
-      await testContracts.testChainlinkAggregator
-        .connect(admin)
-        .setAnswer(longBorderlinePrice.toSolidity());
+      await perpetual.testing.chainlinkAggregator
+        .setAnswer(longBorderlinePrice, admin);
       await expectThrow(
         liquidate(long.address, short.address, positionSize),
         'Cannot liquidate since maker is not undercollateralized'
@@ -353,9 +320,8 @@ describe('P1Liquidation', () => {
     });
 
     it('Cannot liquidate a short position that is not undercollateralized', async () => {
-      await testContracts.testChainlinkAggregator
-        .connect(admin)
-        .setAnswer(shortBorderlinePrice.toSolidity());
+      await perpetual.testing.chainlinkAggregator
+        .setAnswer(shortBorderlinePrice, admin);
       await expect(
         liquidate(short.address, long.address, positionSize)
       ).to.be.revertedWith(
@@ -364,9 +330,8 @@ describe('P1Liquidation', () => {
     });
 
     it('Cannot liquidate a long position if isBuy is false', async () => {
-      await testContracts.testChainlinkAggregator
-        .connect(admin)
-        .setAnswer(longUndercollateralizedPrice.toSolidity());
+      await perpetual.testing.chainlinkAggregator
+        .setAnswer(longUndercollateralizedPrice, admin);
       await expect(
         liquidate(long.address, short.address, positionSize, { isBuy: false })
       ).to.be.revertedWith(
@@ -375,9 +340,8 @@ describe('P1Liquidation', () => {
     });
 
     it('Cannot liquidate a short position if isBuy is true', async () => {
-      await testContracts.testChainlinkAggregator
-        .connect(admin)
-        .setAnswer(shortUndercollateralizedPrice.toSolidity());
+      await perpetual.testing.chainlinkAggregator
+        .setAnswer(shortUndercollateralizedPrice, admin);
       await expect(
         liquidate(short.address, long.address, positionSize, { isBuy: true })
       ).to.be.revertedWith(
@@ -387,9 +351,8 @@ describe('P1Liquidation', () => {
 
     it('With all-or-nothing, fails if amount is greater than the maker position', async () => {
       // Attempt to liquidate the short position.
-      await testContracts.testChainlinkAggregator
-        .connect(admin)
-        .setAnswer(shortUndercollateralizedPrice.toSolidity());
+      await perpetual.testing.chainlinkAggregator
+        .setAnswer(shortUndercollateralizedPrice, admin);
       await expect(
         liquidate(short.address, long.address, positionSize.plus(1), {
           allOrNothing: true,
@@ -411,9 +374,8 @@ describe('P1Liquidation', () => {
       await sell(perpetual, long.address, thirdParty.address, 1, 150);
 
       // Liquidate the short position.
-      await testContracts.testChainlinkAggregator
-        .connect(admin)
-        .setAnswer(shortUndercollateralizedPrice.toSolidity());
+      await perpetual.testing.chainlinkAggregator
+        .setAnswer(shortUndercollateralizedPrice, admin);
       await liquidate(short.address, long.address, positionSize, {
         allOrNothing: true,
       });
@@ -444,9 +406,8 @@ describe('P1Liquidation', () => {
         false // positionsSumToZero
       );
 
-      await testContracts.testChainlinkAggregator
-        .connect(admin)
-        .setAnswer(longUndercollateralizedPrice.toSolidity());
+      await perpetual.testing.chainlinkAggregator
+        .setAnswer(longUndercollateralizedPrice, admin);
       await liquidate(long.address, short.address, positionSize);
     });
 
@@ -476,16 +437,14 @@ describe('P1Liquidation', () => {
         false // positionsSumToZero
       );
 
-      await testContracts.testChainlinkAggregator
-        .connect(admin)
-        .setAnswer(shortUndercollateralizedPrice.toSolidity());
+      await perpetual.testing.chainlinkAggregator
+        .setAnswer(shortUndercollateralizedPrice, admin);
       await liquidate(short.address, long.address, positionSize);
     });
 
     it('Cannot liquidate if the sender is not a global operator', async () => {
-      await testContracts.testChainlinkAggregator
-        .connect(admin)
-        .setAnswer(longUndercollateralizedPrice.toSolidity());
+      await perpetual.testing.chainlinkAggregator
+        .setAnswer(longUndercollateralizedPrice, admin);
       const error = 'Sender is not a global operator';
       await expect(
         liquidate(long.address, short.address, positionSize, {
@@ -503,7 +462,7 @@ describe('P1Liquidation', () => {
       beforeEach(async () => {
         // Short begins with -10 position, 1500 margin.
         // Set a negative funding rate and accumulate 2000 margin worth of interest.
-        await perpetual.fundingOracle.setFunding(new BaseValue(-2), admin);
+        await perpetual.testing.funder.setFunding(new BaseValue(-2), admin);
         await mineAvgBlock();
         await perpetual.contracts.perpetualProxy
           .connect(short)
@@ -523,7 +482,7 @@ describe('P1Liquidation', () => {
 
       it('Succeeds liquidating after bringing margin up to zero', async () => {
         // Avoid additional funding.
-        await perpetual.fundingOracle.setFunding(new BaseValue(0), admin);
+        await perpetual.testing.funder.setFunding(new BaseValue(0), admin);
 
         // Deposit margin into the target account to bring it to zero margin.
         await perpetual.contracts.perpetualProxy

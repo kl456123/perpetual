@@ -1,8 +1,7 @@
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
-import { mintAndDeposit, getTestContracts } from './helpers';
-import { deploy } from '../scripts/helpers';
+import { mintAndDeposit, getTestPerpetual } from './helpers';
 import {
   Price,
   Order,
@@ -10,17 +9,15 @@ import {
   SignedOrder,
   SigningMethod,
   OrderStatus,
-  ApiMarketName,
   address,
 } from '../src/types';
 import { ADDRESSES, INTEGERS, PRICES } from '../src/constants';
 import { BigNumber } from 'bignumber.js';
 import { Orders } from '../src/orders';
-import { Test_ChainlinkAggregator } from '../typechain-types';
-import { WalletProvider } from '../src/wallet_provider';
 import { Signer } from 'ethers';
 import { boolToBytes32 } from '../src/utils';
-import { Perpetual } from '../src/perpetual';
+import { TestChainlinkAggregator } from './modules/test_chainlinkAggregator';
+import { TestPerpetual } from './modules/test_perpetual';
 
 const orderAmount = new BigNumber('1e18');
 const limitPrice = new Price('987.65432');
@@ -53,18 +50,9 @@ describe('P1Orders', () => {
     defaultOrder.taker = fullFlagOrder.taker = taker.address;
     const admin = signers[0];
     const otherUser = signers[8];
-    const { chainId } = await ethers.provider.getNetwork();
-    const walletProvider = new WalletProvider(ethers.provider);
 
-    const addressBook = await deploy(false);
-    const perpetual = new Perpetual(
-      walletProvider,
-      ApiMarketName.PBTC_USDC,
-      chainId,
-      { addressBook }
-    );
+    const perpetual = await getTestPerpetual(ethers.provider);
 
-    const testContracts = getTestContracts(addressBook, ethers.provider);
 
     const defaultSignedOrder = await perpetual.orders.getSignedOrder(
       defaultOrder,
@@ -91,7 +79,7 @@ describe('P1Orders', () => {
         admin,
         taker
       ),
-      setOraclePrice(testContracts.testChainlinkAggregator, limitPrice, admin),
+      setOraclePrice(perpetual.testing.chainlinkAggregator, limitPrice, admin),
     ]);
 
     return {
@@ -99,7 +87,6 @@ describe('P1Orders', () => {
       taker,
       otherUser,
       admin,
-      testContracts,
       perpetual,
       defaultOrder,
       fullFlagOrder,
@@ -611,7 +598,7 @@ describe('P1Orders', () => {
   // ============ Helper Functions ============
 
   async function getModifiedOrder(
-    perpetual: Perpetual,
+    perpetual: TestPerpetual,
     args: Partial<Order>
   ): Promise<SignedOrder> {
     const newOrder: Order = {
@@ -627,7 +614,7 @@ describe('P1Orders', () => {
    * Check that logs and balance updates are as expected.
    */
   async function fillOrder(
-    perpetual: Perpetual,
+    perpetual: TestPerpetual,
     orderArgs: Partial<SignedOrder> = {},
     fillArgs: {
       amount?: BigNumber;
@@ -679,9 +666,9 @@ describe('P1Orders', () => {
 });
 
 async function setOraclePrice(
-  oracle: Test_ChainlinkAggregator,
+  oracle: TestChainlinkAggregator,
   price: Price,
   deployer: Signer
 ): Promise<void> {
-  await oracle.connect(deployer).setAnswer(price.toSolidity());
+  await oracle.setAnswer(price, deployer);
 }

@@ -22,6 +22,10 @@ export interface Index {
   timestamp: BigNumber;
   baseValue: BaseValue;
 }
+export interface FundingRateBounds {
+  maxAbsValue: FundingRate;
+  maxAbsDiffPerSecond: FundingRate;
+}
 
 export interface FundingRateStruct {
   timestamp: BigNumber;
@@ -67,6 +71,15 @@ export class BaseValue {
 
   public div(value: BigNumberable): BaseValue {
     return new BaseValue(this.value.div(value));
+  }
+
+  /**
+   * Return the BaseValue, rounded down to the nearest Solidity-representable value.
+   */
+  public roundedDown(): BaseValue {
+    return new BaseValue(
+      this.value.decimalPlaces(BASE_DECIMALS, BigNumber.ROUND_DOWN)
+    );
   }
 
   public plus(value: BigNumberable): BaseValue {

@@ -132,35 +132,41 @@ async function deployProtocol(
   addressBook['PerpetualProxy'] = perpetualProxy.address;
 }
 
+async function deployTestContracts(
+  network: Network,
+  addressBook: Record<string, string>
+) {
+  if (network === Network.Dev) {
+    addressBook['Test_P1Funder'] = (
+      await deployContract('Test_P1Funder')
+    ).address;
+    addressBook['WETH9'] = (await deployContract('WETH9')).address;
+  }
+  const chainlinkOracle = await deployContract('Test_ChainlinkAggregator');
+  // set fake price in decimal 18
+  await chainlinkOracle.setAnswer(ethers.utils.parseUnits('18200', 18));
+  addressBook['Test_ChainlinkAggregator'] = chainlinkOracle.address;
+}
+
 async function deployOracles(
   perpetualProxyAddr: string,
   network: Network,
   addressBook: Record<string, string>
 ) {
-  const chainlinkOracle = await deployContract('Test_ChainlinkAggregator');
-  // set fake price in decimal 18
-  await chainlinkOracle.setAnswer(ethers.utils.parseUnits('18200', 18));
-
-  let fundingOracle: Contract;
-  if (network === Network.Dev) {
-    fundingOracle = await deployContract('Test_P1Funder');
-  } else {
-    fundingOracle = await deployContract(
-      'P1FundingOracle',
-      getFundingRateProviderAddress(network)
-    );
-  }
+  const fundingOracle = await deployContract(
+    'P1FundingOracle',
+    getFundingRateProviderAddress(network)
+  );
 
   const p1ChainlinkOracle = await deployContract(
     'P1ChainlinkOracle',
-    chainlinkOracle.address,
+    addressBook['Test_ChainlinkAggregator'],
     perpetualProxyAddr,
     getOracleAdjustment(network)
   );
 
   addressBook['P1FundingOracle'] = fundingOracle.address;
-  addressBook['P1MakerOracle'] = p1ChainlinkOracle.address;
-  addressBook['Test_ChainlinkAggregator'] = chainlinkOracle.address;
+  addressBook['P1ChainlinkOracle'] = p1ChainlinkOracle.address;
 }
 
 async function deployTraders(
@@ -203,8 +209,7 @@ async function deployTraders(
     getInsuranceFee(network)
   );
 
-  const weth9 = await deployContract('WETH9');
-  const p1WethProxy = await deployContract('P1WethProxy', weth9.address);
+  const p1WethProxy = await deployContract('P1WethProxy', addressBook['WETH9']);
 
   // initialize proxies
   await p1CurrencyConverterProxy.approveMaximumOnPerpetual(perpetualProxyAddr);
@@ -266,11 +271,15 @@ export async function deploy(save = false) {
   const network = chainId;
   const addressBook: Record<string, string> = {};
   // deploy perpetual
+  await deployTestContracts(network, addressBook);
   await deployProtocol(network, addressBook);
   const perpetualProxyAddr = addressBook['PerpetualProxy'];
   await deployOracles(perpetualProxyAddr, network, addressBook);
-  const fundingOracleAddr = addressBook['P1FundingOracle'];
-  const priceOracleAddr = addressBook['P1MakerOracle'];
+  const fundingOracleAddr =
+    network === Network.Dev
+      ? addressBook['Test_P1Funder']
+      : addressBook['P1FundingOracle'];
+  const priceOracleAddr = addressBook['P1ChainlinkOracle'];
 
   // deploy USDC token contract in dev
   const tokenContract = await deployContract(

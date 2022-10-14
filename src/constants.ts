@@ -57,3 +57,13 @@ export const ADDRESSES = {
     '0xaa012c8cf97bead5deae237070f9587f8e7a266d',
   ],
 };
+
+// Rate limiting is based on a 45 minute period, equal to the funding rate update interval
+// of one hour, with fifteen minutes as a buffer.
+const FUNDING_LIMIT_PERIOD = INTEGERS.ONE_MINUTE_IN_SECONDS.times(45);
+
+// Funding rate limits set by the smart contract.
+export const FUNDING_RATE_MAX_ABS_VALUE =
+  FundingRate.fromEightHourRate('0.0075').roundedDown();
+export const FUNDING_RATE_MAX_ABS_DIFF_PER_SECOND =
+  FUNDING_RATE_MAX_ABS_VALUE.times(2).div(FUNDING_LIMIT_PERIOD).roundedDown();
