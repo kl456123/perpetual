@@ -65,10 +65,10 @@ describe('P1Settlement', () => {
     // | short   |   2000 |      -10 |
     // +---------+--------+----------+
     await Promise.all([
-    perpetual.testing.chainlinkAggregator.setAnswer(
-      new Price(100),
-      adminSigner
-    ),
+      perpetual.testing.chainlinkAggregator.setAnswer(
+        new Price(100),
+        adminSigner
+      ),
       mintAndDeposit(
         perpetual.contracts.marginToken,
         perpetual.contracts.perpetualProxy,
@@ -135,8 +135,10 @@ describe('P1Settlement', () => {
       txResult = await triggerIndexUpdate(otherAccountASigner);
       await expectIndexUpdated(new BaseValue('400.0001'), txResult.blockNumber);
 
-      await perpetual.testing.chainlinkAggregator
-        .setAnswer(new Price(40), adminSigner);
+      await perpetual.testing.chainlinkAggregator.setAnswer(
+        new Price(40),
+        adminSigner
+      );
 
       txResult = await triggerIndexUpdate(otherAccountASigner);
       await expectIndexUpdated(new BaseValue('560.0001'), txResult.blockNumber);
@@ -148,10 +150,11 @@ describe('P1Settlement', () => {
       txResult = await triggerIndexUpdate(otherAccountASigner);
       await expectIndexUpdated(new BaseValue('140.0001'), txResult.blockNumber);
 
-      await perpetual.testing.chainlinkAggregator
-        .setAnswer(new Price(0.00001), adminSigner),
-
-        txResult = await triggerIndexUpdate(otherAccountASigner);
+      await perpetual.testing.chainlinkAggregator.setAnswer(
+        new Price(0.00001),
+        adminSigner
+      ),
+        (txResult = await triggerIndexUpdate(otherAccountASigner));
       await expectIndexUpdated(
         new BaseValue('139.999995'),
         txResult.blockNumber
@@ -168,8 +171,10 @@ describe('P1Settlement', () => {
       // | otherAccountC |     10 |       -4 |
       // +---------------+--------+----------+
       await Promise.all([
-        perpetual.testing.chainlinkAggregator
-          .setAnswer(new Price(1), adminSigner),
+        perpetual.testing.chainlinkAggregator.setAnswer(
+          new Price(1),
+          adminSigner
+        ),
         mintAndDeposit(
           perpetual.contracts.marginToken,
           perpetual.contracts.perpetualProxy,
@@ -214,7 +219,10 @@ describe('P1Settlement', () => {
       // | otherAccountB |     10 |       -3 |           0 |          2.1 |
       // | otherAccountC |     10 |       -4 |           0 |          2.8 |
       // +---------------+--------+----------+-------------+--------------+
-      await perpetual.testing.funder.setFunding(new BaseValue(0.7), adminSigner);
+      await perpetual.testing.funder.setFunding(
+        new BaseValue(0.7),
+        adminSigner
+      );
       await triggerIndexUpdate(otherAccountASigner);
       await expectMarginBalances(perpetual, [otherAccountA], [5], false);
 

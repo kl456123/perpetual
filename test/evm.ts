@@ -5,8 +5,7 @@ export async function mineAvgBlock() {
   await ethers.provider.send('evm_mine', []);
 }
 
-
 export async function fastForward(seconds: number) {
-    await ethers.provider.send('evm_increaseTime', [seconds]);
-    await ethers.provider.send('evm_mine', []);
-  }
+  await ethers.provider.send('evm_increaseTime', [seconds]);
+  await ethers.provider.send('evm_mine', []);
+}

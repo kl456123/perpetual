@@ -225,53 +225,58 @@ describe('P1FundingOracle', () => {
         });
       });
 
-        it('cannot increase faster than the per second limit', async () => {
-          const quarterHour = 60 * 15;
-          const quarterHourMaxDiff = FUNDING_RATE_MAX_ABS_DIFF_PER_SECOND.times(quarterHour);
-          const initialRate = FundingRate.fromEightHourRate('0.00123');
-          const targetRate = initialRate.plus(quarterHourMaxDiff.value);
+      it('cannot increase faster than the per second limit', async () => {
+        const quarterHour = 60 * 15;
+        const quarterHourMaxDiff =
+          FUNDING_RATE_MAX_ABS_DIFF_PER_SECOND.times(quarterHour);
+        const initialRate = FundingRate.fromEightHourRate('0.00123');
+        const targetRate = initialRate.plus(quarterHourMaxDiff.value);
 
-          // Update the funding rate timestamp so we can more accurately estimate the
-          // time elapsed between updates.
-          await setFundingRate(initialRate);
+        // Update the funding rate timestamp so we can more accurately estimate the
+        // time elapsed between updates.
+        await setFundingRate(initialRate);
 
-          // Elapse less than a quarter hour. Assume this test case takes less than 15 seconds.
-          await fastForward(quarterHour - 15);
+        // Elapse less than a quarter hour. Assume this test case takes less than 15 seconds.
+        await fastForward(quarterHour - 15);
 
-          // Expect the bounded rate to be slightly lower than the requested rate.
-          const boundedRate = await getBoundedFundingRate(targetRate);
-          expectBaseValueNotEqual(boundedRate, targetRate);
+        // Expect the bounded rate to be slightly lower than the requested rate.
+        const boundedRate = await getBoundedFundingRate(targetRate);
+        expectBaseValueNotEqual(boundedRate, targetRate);
 
-          // Error should be at most (15 seconds) / (15 minutes) = 1 / 60.
-          const actualDiff = boundedRate.minus(initialRate.value);
-          const ratio = actualDiff.value.div(quarterHourMaxDiff.value).toNumber();
-          expect(ratio).to.be.lessThan(1); // sanity check
-          expect(ratio).to.be.gte(59 / 60 - 0.0000000001); // Allow tolerance for rounding error.
-        });
+        // Error should be at most (15 seconds) / (15 minutes) = 1 / 60.
+        const actualDiff = boundedRate.minus(initialRate.value);
+        const ratio = actualDiff.value.div(quarterHourMaxDiff.value).toNumber();
+        expect(ratio).to.be.lessThan(1); // sanity check
+        expect(ratio).to.be.gte(59 / 60 - 0.0000000001); // Allow tolerance for rounding error.
+      });
 
       it('cannot decrease faster than the per second limit', async () => {
-          const quarterHour = 60 * 15;
-          const quarterHourMaxDiff = FUNDING_RATE_MAX_ABS_DIFF_PER_SECOND.times(quarterHour);
-          const initialRate = FundingRate.fromEightHourRate('0.00123');
-          const targetRate = initialRate.minus(quarterHourMaxDiff.value);
+        const quarterHour = 60 * 15;
+        const quarterHourMaxDiff =
+          FUNDING_RATE_MAX_ABS_DIFF_PER_SECOND.times(quarterHour);
+        const initialRate = FundingRate.fromEightHourRate('0.00123');
+        const targetRate = initialRate.minus(quarterHourMaxDiff.value);
 
-          // Update the funding rate timestamp so we can more accurately estimate the
-          // time elapsed between updates.
-          await setFundingRate(initialRate);
+        // Update the funding rate timestamp so we can more accurately estimate the
+        // time elapsed between updates.
+        await setFundingRate(initialRate);
 
-          // Elapse less than a quarter hour. Assume this test case takes less than 15 seconds.
-          await fastForward(quarterHour - 15);
+        // Elapse less than a quarter hour. Assume this test case takes less than 15 seconds.
+        await fastForward(quarterHour - 15);
 
-          // Expect the bounded rate to be slightly greater than the requested rate.
-          const boundedRate = await getBoundedFundingRate(targetRate);
-          expectBaseValueNotEqual(boundedRate, targetRate);
+        // Expect the bounded rate to be slightly greater than the requested rate.
+        const boundedRate = await getBoundedFundingRate(targetRate);
+        expectBaseValueNotEqual(boundedRate, targetRate);
 
-          // Error should be at most (15 seconds) / (15 minutes) = 1 / 60.
-          const actualDiff = boundedRate.minus(initialRate.value);
-          const ratio = actualDiff.value.div(quarterHourMaxDiff.value).negated().toNumber();
-          expect(ratio).to.be.lessThan(1); // sanity check
-          expect(ratio).to.be.gte(59 / 60 - 0.0000000001); // Allow tolerance for rounding error.
-        });
+        // Error should be at most (15 seconds) / (15 minutes) = 1 / 60.
+        const actualDiff = boundedRate.minus(initialRate.value);
+        const ratio = actualDiff.value
+          .div(quarterHourMaxDiff.value)
+          .negated()
+          .toNumber();
+        expect(ratio).to.be.lessThan(1); // sanity check
+        expect(ratio).to.be.gte(59 / 60 - 0.0000000001); // Allow tolerance for rounding error.
+      });
     });
   });
 
@@ -283,15 +288,15 @@ describe('P1FundingOracle', () => {
     expectBaseValueEqual(funding, new BaseValue(expectedFunding));
   }
 
-    /**
-     * Get the bounded funding rate as the funding rate provider.
-     */
-    async function getBoundedFundingRate(fundingRate: FundingRate) {
-      return perpetual.fundingOracle.getBoundedFundingRate(
-        fundingRate,
-        fundingRateProviderSigner
-      );
-    }
+  /**
+   * Get the bounded funding rate as the funding rate provider.
+   */
+  async function getBoundedFundingRate(fundingRate: FundingRate) {
+    return perpetual.fundingOracle.getBoundedFundingRate(
+      fundingRate,
+      fundingRateProviderSigner
+    );
+  }
 
   /**
    * Set the funding rate and verify the emitted logs.
@@ -302,19 +307,18 @@ describe('P1FundingOracle', () => {
       expectedRate?: FundingRate;
     } = {}
   ): Promise<void> {
-      // Elapse enough time so that the speed limit does not take effect.
-      await fastForward(INTEGERS.ONE_HOUR_IN_SECONDS.toNumber());
+    // Elapse enough time so that the speed limit does not take effect.
+    await fastForward(INTEGERS.ONE_HOUR_IN_SECONDS.toNumber());
 
-      // Verify the return value is as expected.
-            const simulatedResult = await getBoundedFundingRate(fundingRate);
+    // Verify the return value is as expected.
+    const simulatedResult = await getBoundedFundingRate(fundingRate);
     const expectedRate = options.expectedRate || fundingRate;
-      expectBaseValueEqual(simulatedResult, expectedRate, 'simulated result');
+    expectBaseValueEqual(simulatedResult, expectedRate, 'simulated result');
 
     // Set the funding rate.
     await expect(
       perpetual.fundingOracle.setFunding(fundingRate, fundingRateProviderSigner)
-    )
-      .to.emit(perpetual.contracts.fundingOracle, 'LogFundingRateUpdated');
+    ).to.emit(perpetual.contracts.fundingOracle, 'LogFundingRateUpdated');
 
     // Check the actual rate as returned by getFunding().
     const actualRate = await perpetual.fundingOracle.getFundingRate();

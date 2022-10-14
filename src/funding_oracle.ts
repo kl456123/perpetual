@@ -55,16 +55,16 @@ export class FundingOracle {
     return { maxAbsValue, maxAbsDiffPerSecond };
   }
 
-    /**
-     * Simulates the result of calling setFundingRate() using `eth_call`.
-     */
-    public async getBoundedFundingRate(
-      fundingRate: FundingRate,
-      fundingRateProvider: Signer,
-    ): Promise<FundingRate> {
-      const result = await this.contracts.fundingOracle.connect(fundingRateProvider).callStatic.setFundingRate(
-          fundingRate.toSoliditySignedInt(),
-        );
-      return FundingRate.fromSolidity(result.value.toString(), result.isPositive);
-    }
+  /**
+   * Simulates the result of calling setFundingRate() using `eth_call`.
+   */
+  public async getBoundedFundingRate(
+    fundingRate: FundingRate,
+    fundingRateProvider: Signer
+  ): Promise<FundingRate> {
+    const result = await this.contracts.fundingOracle
+      .connect(fundingRateProvider)
+      .callStatic.setFundingRate(fundingRate.toSoliditySignedInt());
+    return FundingRate.fromSolidity(result.value.toString(), result.isPositive);
+  }
 }

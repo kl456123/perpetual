@@ -20,9 +20,7 @@ import { Perpetual } from '../src/perpetual';
 import { PRICES, ADDRESSES, INTEGERS, FEES } from '../src/constants';
 import { expect } from 'chai';
 
-import {
-  Test_ChainlinkAggregator__factory,
-} from '../typechain-types';
+import { Test_ChainlinkAggregator__factory } from '../typechain-types';
 
 export async function deployContract(
   contractName: string,

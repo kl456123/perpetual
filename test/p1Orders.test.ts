@@ -53,7 +53,6 @@ describe('P1Orders', () => {
 
     const perpetual = await getTestPerpetual(ethers.provider);
 
-
     const defaultSignedOrder = await perpetual.orders.getSignedOrder(
       defaultOrder,
       SigningMethod.Hash
