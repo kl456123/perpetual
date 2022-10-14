@@ -9,8 +9,11 @@ let connection: Connection;
  *   */
 import 'reflect-metadata';
 import { DataSource } from 'typeorm';
-import { User } from './entities/User';
-import { SignedOrderEntity, TradeHistoryEntity } from './entities';
+import {
+  SignedOrderEntity,
+  TradeHistoryEntity,
+  AccountEntity,
+} from './entities';
 
 export async function getDBConnectionAsync(): Promise<Connection> {
   if (!connection) {
@@ -25,7 +28,7 @@ export async function getDBConnectionAsync(): Promise<Connection> {
       database: 'test',
       synchronize: true,
       logging: false,
-      entities: [SignedOrderEntity, TradeHistoryEntity],
+      entities: [SignedOrderEntity, TradeHistoryEntity, AccountEntity],
       migrations: [],
       subscribers: [],
     });

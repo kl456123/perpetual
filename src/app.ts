@@ -101,6 +101,7 @@ export async function getDefaultAppDependenciesAsync(
   );
   const orderBookService = new OrderBookService(connection, perpetual);
   const accountService = new AccountService(perpetual);
+  accountService.start();
 
   const websocketOpts = { path: WEBSOCKET_ORDER_UPDATES_PATH };
   return {

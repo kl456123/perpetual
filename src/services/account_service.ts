@@ -6,6 +6,16 @@ import { DEPLOYER_ACCOUNT } from '../config';
 export class AccountService {
   constructor(protected perpetual: Perpetual) {}
 
+  start() {
+    this.perpetual.contracts.perpetualProxy
+      .on('LogDeposit', (account, amount, balance) => {
+        console.log(account, amount, balance);
+      })
+      .on('LogWithdraw', (account, destination, amount, balance) => {
+        console.log(account, destination, amount, balance);
+      });
+  }
+
   public async getAccountBalanceAsync(account: address): Promise<ApiAccount> {
     return this.perpetual.getAccount(account);
   }
