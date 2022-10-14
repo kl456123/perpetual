@@ -70,6 +70,10 @@ export function hashString(input: string) {
   return ethers.utils.solidityKeccak256(['string'], [input]);
 }
 
+export function boolToBytes32(b: boolean): string {
+  return `0x${'0'.repeat(63)}${b ? '1' : 0}`;
+}
+
 export function stripHexPrefix(input: string) {
   if (input.startsWith('0x')) {
     return input.slice(2);

@@ -18,6 +18,15 @@ export interface BalanceStruct {
   position: string;
 }
 
+export interface Index {
+  timestamp: BigNumber;
+  baseValue: BaseValue;
+}
+export interface FundingRateBounds {
+  maxAbsValue: FundingRate;
+  maxAbsDiffPerSecond: FundingRate;
+}
+
 export interface FundingRateStruct {
   timestamp: BigNumber;
   isPositive: boolean;
@@ -64,6 +73,15 @@ export class BaseValue {
     return new BaseValue(this.value.div(value));
   }
 
+  /**
+   * Return the BaseValue, rounded down to the nearest Solidity-representable value.
+   */
+  public roundedDown(): BaseValue {
+    return new BaseValue(
+      this.value.decimalPlaces(BASE_DECIMALS, BigNumber.ROUND_DOWN)
+    );
+  }
+
   public plus(value: BigNumberable): BaseValue {
     return new BaseValue(this.value.plus(value));
   }
@@ -82,6 +100,10 @@ export class BaseValue {
 
   public isPositive(): boolean {
     return this.value.isPositive();
+  }
+
+  public times(value: BigNumberable): BaseValue {
+    return new BaseValue(this.value.times(value));
   }
 
   public isNegative(): boolean {
@@ -272,6 +294,7 @@ export interface ApiOptions {
 export interface PerpetualOptions {
   defaultAccount?: address;
   apiOptions?: ApiOptions;
+  addressBook?: Record<string, string>;
 }
 
 export enum SIGNATURE_TYPES {
@@ -475,4 +498,23 @@ export enum EventType {
   // event of account
   Deposit = 'Deposit',
   Withdraw = 'Withdraw',
+}
+
+export class Balance {
+  public margin: BigNumber;
+  public position: BigNumber;
+
+  constructor(margin: BigNumberable, position: BigNumberable) {
+    this.margin = new BigNumber(margin);
+    this.position = new BigNumber(position);
+  }
+
+  static fromSolidity(struct: BalanceStruct): Balance {
+    const marginBN = new BigNumber(struct.margin);
+    const positionBN = new BigNumber(struct.position);
+    return new Balance(
+      struct.marginIsPositive ? marginBN : marginBN.negated(),
+      struct.positionIsPositive ? positionBN : positionBN.negated()
+    );
+  }
 }

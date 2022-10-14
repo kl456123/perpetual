@@ -10,6 +10,11 @@ import {
 } from '../src/types';
 import BigNumber from 'bignumber.js';
 import { WalletProvider } from '../src/wallet_provider';
+import { DEPLOYER_ACCOUNT } from '../src/config';
+import { Test_ChainlinkAggregator } from '../typechain-types/contracts/test/external';
+import { Test_ChainlinkAggregator__factory } from '../typechain-types/factories/contracts/test/external';
+import deploymentsJSON from '../deployments/deployments.json';
+import { DeploymentsAddress } from '../src/addresses';
 
 async function fillOrder(
   perpetual: Perpetual,
@@ -75,27 +80,37 @@ async function main() {
   const url = 'http://localhost:8545';
   const provider = new ethers.providers.JsonRpcProvider(url);
   const market = ApiMarketName.PBTC_USDC;
+  const deployerWallet = provider.getSigner(DEPLOYER_ACCOUNT);
   const makerWallet = provider.getSigner(
-    '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
+    '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC'
   );
   const takerWallet = provider.getSigner(
     '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'
   );
   const walletProvider = new WalletProvider(provider);
   walletProvider.unlockAll([
-    '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
+    '0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a',
     '0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d',
   ]);
+  const networkId = 31337;
+  const addressBook = (deploymentsJSON as DeploymentsAddress)[networkId];
+  const chainlink = Test_ChainlinkAggregator__factory.connect(
+    addressBook.Test_ChainlinkAggregator,
+    provider
+  );
+  await chainlink
+    .connect(takerWallet)
+    .setAnswer(ethers.utils.parseUnits('18700', 18));
 
-  const perpetual = new Perpetual(walletProvider, market, 31337);
+  const perpetual = new Perpetual(walletProvider, market, networkId);
   const mintAmount = ethers.utils.parseUnits('1000', 6); // 1000 margin token
 
   // mint margin token first
   await perpetual.contracts.marginToken
-    .connect(makerWallet)
+    .connect(deployerWallet)
     .mint(makerWallet._address, mintAmount);
   await perpetual.contracts.marginToken
-    .connect(makerWallet)
+    .connect(deployerWallet)
     .mint(takerWallet._address, mintAmount);
 
   // deposit margin token to perpetual
@@ -145,6 +160,23 @@ async function main() {
   console.log('------check balance after------');
   await checkBalance(perpetual, makerWallet._address);
   await checkBalance(perpetual, takerWallet._address);
+
+  // liquidation
+  await chainlink
+    .connect(takerWallet)
+    .setAnswer(ethers.utils.parseUnits('15000', 18));
+  const liquidatee = takerWallet._address;
+  const liquidator = makerWallet._address;
+  const isBuy = true;
+  const maxPosition = { value: 0, isPositive: true };
+  await checkBalance(perpetual, deployerWallet._address);
+  await perpetual.contracts.liquidatorProxy
+    .connect(makerWallet)
+    .liquidate(liquidatee, liquidator, isBuy, maxPosition);
+  console.log('------check balance after liquidation------');
+  await checkBalance(perpetual, makerWallet._address);
+  await checkBalance(perpetual, takerWallet._address);
+  await checkBalance(perpetual, deployerWallet._address);
 }
 
 main().catch(console.error);
