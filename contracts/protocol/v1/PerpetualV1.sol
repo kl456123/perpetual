@@ -78,7 +78,8 @@ contract PerpetualV1 is
         _FUNDER_ = funder;
         _MIN_COLLATERAL_ = minCollateral;
 
-        _GLOBAL_INDEX_ = P1Types.Index({
+        uint8 assetId = 0;
+        _MARKETS_[assetId].index = P1Types.Index({
             timestamp: uint32(block.timestamp),
             isPositive: false,
             value: 0

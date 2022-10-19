@@ -25,8 +25,8 @@ import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
 import {P1Settlement} from './P1Settlement.sol';
 import {BaseMath} from '../../lib/BaseMath.sol';
 import {Math} from '../../lib/Math.sol';
-import {P1BalanceMath} from '../lib/P1BalanceMath.sol';
 import {P1Types} from '../lib/P1Types.sol';
+import { SignedMath } from '../../lib/SignedMath.sol';
 
 /**
  * @title P1FinalSettlement
@@ -81,28 +81,21 @@ contract P1FinalSettlement is P1Settlement {
         onlyFinalSettlement
         nonReentrant
     {
-        // Load the context using the final settlement price.
-        P1Types.Context memory context = P1Types.Context({
-            price: _FINAL_SETTLEMENT_PRICE_,
-            minCollateral: _MIN_COLLATERAL_,
-            index: _GLOBAL_INDEX_
-        });
-
         // Apply funding changes.
-        P1Types.Balance memory balance = _settleAccount(context, msg.sender);
+        _settleAccountTotally(msg.sender);
 
         // Determine the account net value.
         // `positive` and `negative` are base values with extra precision.
-        (uint256 positive, uint256 negative) = P1BalanceMath
-            .getPositiveAndNegativeValue(balance, context.price);
+        (SignedMath.Int memory totalValue, ) =
+            getTotalValueAndTotalRisk(msg.sender);
 
         // No amount is withdrawable.
-        if (positive < negative) {
+        if (!totalValue.isPositive) {
             return;
         }
 
         // Get the account value, which is rounded down to the nearest token amount.
-        uint256 accountValue = positive.sub(negative).div(BaseMath.base());
+        uint256 accountValue = totalValue.value.div(BaseMath.base());
 
         // Get the number of tokens in the Perpetual Contract.
         uint256 contractBalance = IERC20(_TOKEN_).balanceOf(address(this));
@@ -114,13 +107,13 @@ contract P1FinalSettlement is P1Settlement {
         uint120 remainingMargin = accountValue
             .sub(amountToWithdraw)
             .toUint120();
-        balance = P1Types.Balance({
-            marginIsPositive: remainingMargin != 0,
-            positionIsPositive: false,
-            margin: remainingMargin,
-            position: 0
-        });
-        _BALANCES_[msg.sender] = balance;
+
+        _MARGINS_[msg.sender] = SignedMath.Int({value: remainingMargin, isPositive: remainingMargin!=0});
+        // clear all positions
+        for(uint i=0;i<accountAssets[msg.sender].length; ++i){
+            uint8 assetId = accountAssets[msg.sender][i];
+            _POSITIONS_[assetId][msg.sender].position = 0;
+        }
 
         // Send the tokens.
         SafeERC20.safeTransfer(IERC20(_TOKEN_), msg.sender, amountToWithdraw);
@@ -129,7 +122,7 @@ contract P1FinalSettlement is P1Settlement {
         emit LogWithdrawFinalSettlement(
             msg.sender,
             amountToWithdraw,
-            balance.toBytes32()
+            bytes32(0)
         );
     }
 }

@@ -24,8 +24,8 @@ import {P1FinalSettlement} from './P1FinalSettlement.sol';
 import {BaseMath} from '../../lib/BaseMath.sol';
 import {Require} from '../../lib/Require.sol';
 import {I_P1Trader} from '../intf/I_P1Trader.sol';
-import {P1BalanceMath} from '../lib/P1BalanceMath.sol';
 import {P1Types} from '../lib/P1Types.sol';
+import {SignedMath} from '../../lib/SignedMath.sol';
 
 /**
  * @title P1Trade
@@ -37,7 +37,6 @@ import {P1Types} from '../lib/P1Types.sol';
  */
 contract P1Trade is P1FinalSettlement {
     using SafeMath for uint120;
-    using P1BalanceMath for P1Types.Balance;
 
     // ============ Structs ============
 
@@ -45,6 +44,7 @@ contract P1Trade is P1FinalSettlement {
         uint256 takerIndex;
         uint256 makerIndex;
         address trader;
+        uint8 assetIndex;
         bytes data;
     }
 
@@ -77,22 +77,9 @@ contract P1Trade is P1FinalSettlement {
         nonReentrant
     {
         _verifyAccounts(accounts);
-        P1Types.Context memory context = _loadContext();
-        P1Types.Balance[] memory initialBalances = _settleAccounts(
-            context,
-            accounts
-        );
-        P1Types.Balance[] memory currentBalances = new P1Types.Balance[](
-            initialBalances.length
-        );
-
-        uint256 i;
-        for (i = 0; i < initialBalances.length; i++) {
-            currentBalances[i] = initialBalances[i].copy();
-        }
 
         bytes32 traderFlags = 0;
-        for (i = 0; i < trades.length; i++) {
+        for (uint i = 0; i < trades.length; i++) {
             TradeArg memory tradeArg = trades[i];
 
             require(
@@ -102,13 +89,15 @@ contract P1Trade is P1FinalSettlement {
 
             address maker = accounts[tradeArg.makerIndex];
             address taker = accounts[tradeArg.takerIndex];
+            uint256 price = _MARKETS_[tradeArg.assetIndex].price;
 
             P1Types.TradeResult memory tradeResult = I_P1Trader(tradeArg.trader)
                 .trade(
                     msg.sender,
                     maker,
                     taker,
-                    context.price,
+                    price,
+                    tradeArg.assetIndex,
                     tradeArg.data,
                     traderFlags
                 );
@@ -121,27 +110,16 @@ contract P1Trade is P1FinalSettlement {
             }
 
             // Modify currentBalances in-place. Note that `isBuy` is from the taker's perspective.
-            P1Types.Balance memory makerBalance = currentBalances[
-                tradeArg.makerIndex
-            ];
-            P1Types.Balance memory takerBalance = currentBalances[
-                tradeArg.takerIndex
-            ];
-            if (tradeResult.isBuy) {
-                makerBalance.addToMargin(tradeResult.marginAmount);
-                makerBalance.subFromPosition(tradeResult.positionAmount);
-                takerBalance.subFromMargin(tradeResult.marginAmount);
-                takerBalance.addToPosition(tradeResult.positionAmount);
-            } else {
-                makerBalance.subFromMargin(tradeResult.marginAmount);
-                makerBalance.addToPosition(tradeResult.positionAmount);
-                takerBalance.addToMargin(tradeResult.marginAmount);
-                takerBalance.subFromPosition(tradeResult.positionAmount);
+
+            if(tradeResult.isBuy){
+                _updatePosition(taker, tradeArg.assetIndex, SignedMath.Int({value: tradeResult.positionAmount, isPositive: true}), SignedMath.Int({value: tradeResult.marginAmount, isPositive: false}));
+                _updatePosition(maker, tradeArg.assetIndex, SignedMath.Int({value: tradeResult.positionAmount, isPositive: false}), SignedMath.Int({value: tradeResult.marginAmount, isPositive: true}));
+            }else{
+                _updatePosition(maker, tradeArg.assetIndex, SignedMath.Int({value: tradeResult.positionAmount, isPositive: true}), SignedMath.Int({value: tradeResult.marginAmount, isPositive: false}));
+                _updatePosition(taker, tradeArg.assetIndex, SignedMath.Int({value: tradeResult.positionAmount, isPositive: false}), SignedMath.Int({value: tradeResult.marginAmount, isPositive: true}));
             }
 
-            // Store the new balances in storage.
-            _BALANCES_[maker] = makerBalance;
-            _BALANCES_[taker] = takerBalance;
+            // update margin
 
             emit LogTrade(
                 maker,
@@ -150,17 +128,11 @@ contract P1Trade is P1FinalSettlement {
                 tradeResult.marginAmount,
                 tradeResult.positionAmount,
                 tradeResult.isBuy,
-                makerBalance.toBytes32(),
-                takerBalance.toBytes32()
+                bytes32(0),
+                bytes32(0)
             );
         }
 
-        _verifyAccountsFinalBalances(
-            context,
-            accounts,
-            initialBalances,
-            currentBalances
-        );
     }
 
     /**
@@ -182,91 +154,73 @@ contract P1Trade is P1FinalSettlement {
         }
     }
 
-    /**
-     * Verify that account balances at the end of the tx are allowable given the initial balances.
-     *
-     * We require that for every account, either:
-     * 1. The account meets the collateralization requirement; OR
-     * 2. All of the following are true:
-     *   a) The absolute value of the account position has not increased;
-     *   b) The sign of the account position has not flipped positive to negative or vice-versa.
-     *   c) The account's collateralization ratio has not worsened;
-     */
-    function _verifyAccountsFinalBalances(
-        P1Types.Context memory context,
-        address[] memory accounts,
-        P1Types.Balance[] memory initialBalances,
-        P1Types.Balance[] memory currentBalances
-    ) private pure {
-        for (uint256 i = 0; i < accounts.length; i++) {
-            P1Types.Balance memory currentBalance = currentBalances[i];
-            (uint256 currentPos, uint256 currentNeg) = currentBalance
-                .getPositiveAndNegativeValue(context.price);
+    function _updatePosition(
+        address account, uint8 assetId,
+        SignedMath.Int memory marginDelta,
+        SignedMath.Int memory positionDelta
+    )internal{
+        // settle funding
+        _settleAccountTotally(account);
 
-            // See P1Settlement._isCollateralized().
-            bool isCollateralized = currentPos.mul(BaseMath.base()) >=
-                currentNeg.mul(context.minCollateral);
+        SignedMath.Int memory initialPosition = _getAccountPosition(account, assetId);
+        (SignedMath.Int memory initialTotalValue, SignedMath.Int memory initialTotalRisk) = getTotalValueAndTotalRisk(account);
+
+        SignedMath.Int memory currentPosition = _addAsset(account, assetId, positionDelta);
+        _addCollateral(account, marginDelta);
+
+        _checkValidTransition(account, assetId, initialPosition, currentPosition, initialTotalValue, initialTotalRisk);
+
+    }
+
+    function _checkValidTransition(
+        address account, uint8 assetId,
+        SignedMath.Int memory initialPosition,
+        SignedMath.Int memory currentPosition,
+        SignedMath.Int memory initialTotalValue,
+        SignedMath.Int memory initialTotalRisk
+    ) internal view{
+        P1Types.Market memory market = _MARKETS_[assetId];
+        (SignedMath.Int memory currentTotalValue, SignedMath.Int memory currentTotalRisk) = getTotalValueAndTotalRisk(account);
+
+        // See P1Settlement._isCollateralized().
+            bool isCollateralized = !currentTotalValue.isPositive || currentTotalValue.value.mul(BaseMath.base()) >=
+                currentTotalRisk.value.mul(_RISK_FACTOR_);
 
             if (isCollateralized) {
-                continue;
+                return;
             }
 
-            address account = accounts[i];
-            P1Types.Balance memory initialBalance = initialBalances[i];
-            (uint256 initialPos, uint256 initialNeg) = initialBalance
-                .getPositiveAndNegativeValue(context.price);
+        Require.that(
+            _checkSmallerInPositionHoldings(initialPosition, currentPosition),
+            'account is undercollateralized and sign is changed',
+            account
+                    );
 
-            Require.that(
-                currentPos != 0,
-                'account is undercollateralized and has no positive value',
-                account
-            );
-            Require.that(
-                currentBalance.position <= initialBalance.position,
-                'account is undercollateralized and absolute position size increased',
-                account
-            );
-
-            // Note that currentBalance.position can't be zero at this point since that would imply
-            // either currentPos is zero or the account is well-collateralized.
-
-            Require.that(
-                currentBalance.positionIsPositive ==
-                    initialBalance.positionIsPositive,
-                'account is undercollateralized and position changed signs',
-                account
-            );
-            Require.that(
-                initialNeg != 0,
-                'account is undercollateralized and was not previously',
-                account
-            );
-
-            // Note that at this point:
-            //   Absolute position size must have decreased and not changed signs.
-            //   Initial margin/position must be one of -/-, -/+, or +/-.
-            //   Current margin/position must now be either -/+ or +/-.
-            //
-            // Which implies one of the following [intial] -> [current] configurations:
-            //   [-/-] -> [+/-]
-            //   [-/+] -> [-/+]
-            //   [+/-] -> [+/-]
-
-            // Check that collateralization increased.
-            // In the case of [-/-] initial, initialPos == 0 so the following will pass. Otherwise:
-            // at this point, either initialNeg and currentNeg represent the margin values, or
-            // initialPos and currentPos do. Since the margin is multiplied by the base value in
-            // getPositiveAndNegativeValue(), it is safe to use baseDivMul() to divide the margin
-            // without any rounding. This is important to avoid the possibility of overflow.
-            Require.that(
-                currentBalance.positionIsPositive
-                    ? currentNeg.baseDivMul(initialPos) <=
-                        initialNeg.baseDivMul(currentPos)
-                    : initialPos.baseDivMul(currentNeg) <=
-                        currentPos.baseDivMul(initialNeg),
+        Require.that(
+                initialTotalValue.value*currentTotalRisk.value<=currentTotalValue.value*initialTotalRisk.value,
                 'account is undercollateralized and collateralization decreased',
                 account
             );
+
+            if(initialTotalRisk.value==0){
+                Require.that(
+                    initialTotalValue.value<=currentTotalValue.value,
+                    'total value of account is decreased',
+                    account
+                );
+            }
+    }
+
+    function _checkSmallerInPositionHoldings(
+        SignedMath.Int memory initialPosition,
+        SignedMath.Int memory currentPosition
+    ) internal pure returns(bool){
+        if(currentPosition.value==0){
+            return true;
         }
+        if(initialPosition.value==0){
+            return false;
+        }
+        return currentPosition.gt(initialPosition);
     }
 }

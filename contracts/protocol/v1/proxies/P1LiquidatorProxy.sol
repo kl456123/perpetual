@@ -26,7 +26,6 @@ import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
 import {BaseMath} from '../../lib/BaseMath.sol';
 import {SignedMath} from '../../lib/SignedMath.sol';
 import {I_PerpetualV1} from '../intf/I_PerpetualV1.sol';
-import {P1BalanceMath} from '../lib/P1BalanceMath.sol';
 import {P1Types} from '../lib/P1Types.sol';
 
 /**
@@ -40,7 +39,6 @@ contract P1LiquidatorProxy is Ownable {
     using BaseMath for uint256;
     using SafeMath for uint256;
     using SignedMath for SignedMath.Int;
-    using P1BalanceMath for P1Types.Balance;
     using SafeERC20 for IERC20;
 
     // ============ Events ============
@@ -139,48 +137,49 @@ contract P1LiquidatorProxy is Ownable {
 
         // Settle the liquidator's account and get balances.
         perpetual.deposit(liquidator, 0);
-        P1Types.Balance memory initialBalance = perpetual.getAccountBalance(
-            liquidator
-        );
+        // P1Types.PositionAsset memory initialBalance = perpetual.getAccountBalance(
+            // liquidator
+        // );
 
-        // Get the maximum liquidatable amount.
-        SignedMath.Int memory maxPositionDelta = _getMaxPositionDelta(
-            initialBalance,
-            isBuy,
-            maxPosition
-        );
+        // // Get the maximum liquidatable amount.
+        // SignedMath.Int memory maxPositionDelta = _getMaxPositionDelta(
+            // initialBalance,
+            // isBuy,
+            // maxPosition
+        // );
 
-        // Do the liquidation.
-        _doLiquidation(perpetual, liquidatee, liquidator, maxPositionDelta);
+        // // Do the liquidation.
+        // _doLiquidation(perpetual, liquidatee, liquidator, maxPositionDelta);
 
-        // Get the balances of the liquidator.
-        P1Types.Balance memory currentBalance = perpetual.getAccountBalance(
-            liquidator
-        );
+        // // Get the balances of the liquidator.
+        // P1Types.Balance memory currentBalance = perpetual.getAccountBalance(
+            // liquidator
+        // );
 
-        // Get the liquidated amount and fee amount.
-        (uint256 liqAmount, uint256 feeAmount) = _getLiquidatedAndFeeAmount(
-            perpetual,
-            initialBalance,
-            currentBalance
-        );
+        // // Get the liquidated amount and fee amount.
+        // (uint256 liqAmount, uint256 feeAmount) = _getLiquidatedAndFeeAmount(
+            // perpetual,
+            // initialBalance,
+            // currentBalance
+        // );
 
-        // Transfer fee from liquidator to insurance fund.
-        if (feeAmount > 0) {
-            perpetual.withdraw(liquidator, address(this), feeAmount);
-            perpetual.deposit(_INSURANCE_FUND_, feeAmount);
-        }
+        // // Transfer fee from liquidator to insurance fund.
+        // if (feeAmount > 0) {
+            // perpetual.withdraw(liquidator, address(this), feeAmount);
+            // perpetual.deposit(_INSURANCE_FUND_, feeAmount);
+        // }
 
-        // Log the result.
-        emit LogLiquidatorProxyUsed(
-            liquidatee,
-            liquidator,
-            isBuy,
-            liqAmount,
-            feeAmount
-        );
+        // // Log the result.
+        // emit LogLiquidatorProxyUsed(
+            // liquidatee,
+            // liquidator,
+            // isBuy,
+            // liqAmount,
+            // feeAmount
+        // );
 
-        return liqAmount;
+        // return liqAmount;
+        return 0;
     }
 
     // ============ Admin Functions ============
@@ -215,12 +214,12 @@ contract P1LiquidatorProxy is Ownable {
      * @dev Calculate (and verify) the maximum amount to liquidate based on the maxPosition input.
      */
     function _getMaxPositionDelta(
-        P1Types.Balance memory initialBalance,
+        P1Types.PositionAsset memory initialBalance,
         bool isBuy,
         SignedMath.Int memory maxPosition
     ) private pure returns (SignedMath.Int memory) {
         SignedMath.Int memory result = maxPosition.signedSub(
-            initialBalance.getPosition()
+            SignedMath.Int({value: initialBalance.position, isPositive: initialBalance.positionIsPositive})
         );
 
         require(
@@ -274,36 +273,36 @@ contract P1LiquidatorProxy is Ownable {
      * @return  The position amount bought or sold.
      * @return  The fee amount in margin token.
      */
-    function _getLiquidatedAndFeeAmount(
-        I_PerpetualV1 perpetual,
-        P1Types.Balance memory initialBalance,
-        P1Types.Balance memory currentBalance
-    ) private view returns (uint256, uint256) {
-        // Get the change in the position and margin of the liquidator.
-        SignedMath.Int memory deltaPosition = currentBalance
-            .getPosition()
-            .signedSub(initialBalance.getPosition());
-        SignedMath.Int memory deltaMargin = currentBalance
-            .getMargin()
-            .signedSub(initialBalance.getMargin());
+    // function _getLiquidatedAndFeeAmount(
+        // I_PerpetualV1 perpetual,
+        // P1Types.Balance memory initialBalance,
+        // P1Types.Balance memory currentBalance
+    // ) private view returns (uint256, uint256) {
+        // // Get the change in the position and margin of the liquidator.
+        // SignedMath.Int memory deltaPosition = currentBalance
+            // .getPosition()
+            // .signedSub(initialBalance.getPosition());
+        // SignedMath.Int memory deltaMargin = currentBalance
+            // .getMargin()
+            // .signedSub(initialBalance.getMargin());
 
-        // Get the change in the balances of the liquidator.
-        P1Types.Balance memory deltaBalance;
-        deltaBalance.setPosition(deltaPosition);
-        deltaBalance.setMargin(deltaMargin);
+        // // Get the change in the balances of the liquidator.
+        // P1Types.Balance memory deltaBalance;
+        // deltaBalance.setPosition(deltaPosition);
+        // deltaBalance.setMargin(deltaMargin);
 
-        // Get the positive and negative value taken by the liquidator.
-        uint256 price = perpetual.getOraclePrice();
-        (uint256 posValue, uint256 negValue) = deltaBalance
-            .getPositiveAndNegativeValue(price);
+        // // Get the positive and negative value taken by the liquidator.
+        // uint256 price = perpetual.getOraclePrice();
+        // (uint256 posValue, uint256 negValue) = deltaBalance
+            // .getPositiveAndNegativeValue(price);
 
-        // Calculate the fee amount based on the liquidation profit.
-        uint256 feeAmount = posValue > negValue
-            ? posValue.sub(negValue).baseMul(_INSURANCE_FEE_).div(
-                BaseMath.base()
-            )
-            : 0;
+        // // Calculate the fee amount based on the liquidation profit.
+        // uint256 feeAmount = posValue > negValue
+            // ? posValue.sub(negValue).baseMul(_INSURANCE_FEE_).div(
+                // BaseMath.base()
+            // )
+            // : 0;
 
-        return (deltaPosition.value, feeAmount);
-    }
+        // return (deltaPosition.value, feeAmount);
+    // }
 }

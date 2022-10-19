@@ -122,23 +122,23 @@ contract P1Admin is P1Storage, P1FinalSettlement {
      */
     function enableFinalSettlement(
         uint256 priceLowerBound,
-        uint256 priceUpperBound
+        uint256 priceUpperBound,
+        uint8 assetId
     ) external onlyAdmin noFinalSettlement nonReentrant {
-        // Update the Global Index and grab the Price.
-        P1Types.Context memory context = _loadContext();
+        P1Types.Market memory market = _MARKETS_[assetId];
 
         // Check price bounds.
         require(
-            context.price >= priceLowerBound,
+            market.price >= priceLowerBound,
             'Oracle price is less than the provided lower bound'
         );
         require(
-            context.price <= priceUpperBound,
+            market.price <= priceUpperBound,
             'Oracle price is greater than the provided upper bound'
         );
 
         // Save storage variables.
-        _FINAL_SETTLEMENT_PRICE_ = context.price;
+        _FINAL_SETTLEMENT_PRICE_ = market.price;
         _FINAL_SETTLEMENT_ENABLED_ = true;
 
         emit LogFinalSettlementEnabled(_FINAL_SETTLEMENT_PRICE_);

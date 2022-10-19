@@ -41,17 +41,18 @@ library P1Types {
     /**
      * @dev Used to track the signed margin balance and position balance values for each account.
      */
-    struct Balance {
-        bool marginIsPositive;
+
+    struct PositionAsset {
         bool positionIsPositive;
-        uint120 margin;
-        uint120 position;
+        uint256 position;
+        bool isFundingPositive;
+        uint128 cachedfundingIndex;
     }
 
     /**
      * @dev Used to cache commonly-used variables that are relatively gas-intensive to obtain.
      */
-    struct Context {
+    struct Market {
         uint256 price;
         uint256 minCollateral;
         Index index;

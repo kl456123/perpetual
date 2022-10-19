@@ -22,6 +22,7 @@ pragma experimental ABIEncoderV2;
 import {Adminable} from '../../lib/Adminable.sol';
 import {ReentrancyGuard} from '../../lib/ReentrancyGuard.sol';
 import {P1Types} from '../lib/P1Types.sol';
+import {SignedMath} from '../../lib/SignedMath.sol';
 
 /**
  * @title P1Storage
@@ -30,8 +31,16 @@ import {P1Types} from '../lib/P1Types.sol';
  * @notice Storage contract. Contains or inherits from all contracts that have ordered storage.
  */
 contract P1Storage is Adminable, ReentrancyGuard {
-    mapping(address => P1Types.Balance) internal _BALANCES_;
-    mapping(address => P1Types.Index) internal _LOCAL_INDEXES_;
+    // mapping(assetId => mapping( account => balance ))
+    mapping(uint8 => mapping(address => P1Types.PositionAsset)) public _POSITIONS_;
+    // mapping(uint8 => mapping(address => SignedMath.Int)) public _LOCAL_INDEXES_;
+    // mapping(uint8 => mapping(address => SignedMath.Int)) public _POSITIONS_;
+    mapping(address => SignedMath.Int) public _MARGINS_;
+    mapping(address => uint) public _FUNDING_TIMESTAMPS_;
+
+    mapping(uint8 => P1Types.Market) public _MARKETS_;
+
+    mapping(address => uint8[]) public accountAssets;
 
     mapping(address => bool) internal _GLOBAL_OPERATORS_;
     mapping(address => mapping(address => bool)) internal _LOCAL_OPERATORS_;
@@ -40,9 +49,12 @@ contract P1Storage is Adminable, ReentrancyGuard {
     address internal _ORACLE_;
     address internal _FUNDER_;
 
-    P1Types.Index internal _GLOBAL_INDEX_;
     uint256 internal _MIN_COLLATERAL_;
+
+    uint256 internal _RISK_FACTOR_;
 
     bool internal _FINAL_SETTLEMENT_ENABLED_;
     uint256 internal _FINAL_SETTLEMENT_PRICE_;
+
+    uint8 internal _POSITION_MAX_SUPPORTED_N_ASSETS_;
 }

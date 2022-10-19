@@ -25,6 +25,7 @@ import {BaseMath} from '../../lib/BaseMath.sol';
 import {TypedSignature} from '../../lib/TypedSignature.sol';
 import {P1Getters} from '../impl/P1Getters.sol';
 import {P1Types} from '../lib/P1Types.sol';
+import { SignedMath } from '../../lib/SignedMath.sol';
 
 /**
  * @title P1Orders
@@ -188,6 +189,7 @@ contract P1Orders is P1TraderConstants {
         address maker,
         address taker,
         uint256 price,
+        uint8 assetId,
         bytes calldata data,
         bytes32 /* traderFlags */
     ) external returns (P1Types.TradeResult memory) {
@@ -207,7 +209,7 @@ contract P1Orders is P1TraderConstants {
 
         // validations
         _verifyOrderStateAndSignature(tradeData, orderHash);
-        _verifyOrderRequest(tradeData, maker, taker, perpetual, price);
+        _verifyOrderRequest(tradeData, maker, taker, perpetual, price, assetId);
 
         // set _FILLED_AMOUNT_
         uint256 oldFilledAmount = _FILLED_AMOUNT_[orderHash];
@@ -335,7 +337,8 @@ contract P1Orders is P1TraderConstants {
         address maker,
         address taker,
         address perpetual,
-        uint256 price
+        uint256 price,
+        uint8 assetId
     ) private view {
         require(
             tradeData.order.maker == maker,
@@ -374,11 +377,11 @@ contract P1Orders is P1TraderConstants {
         }
 
         if (_isDecreaseOnly(tradeData.order)) {
-            P1Types.Balance memory balance = P1Getters(perpetual)
-                .getAccountBalance(maker);
+            SignedMath.Int memory balance = P1Getters(perpetual)
+                .getAccountBalance(maker, assetId);
             require(
-                isBuyOrder != balance.positionIsPositive &&
-                    tradeData.fill.amount <= balance.position,
+                isBuyOrder != balance.isPositive &&
+                    tradeData.fill.amount <= balance.value,
                 'Fill does not decrease position'
             );
         }

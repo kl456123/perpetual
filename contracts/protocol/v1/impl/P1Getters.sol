@@ -22,6 +22,7 @@ pragma experimental ABIEncoderV2;
 import {P1Storage} from './P1Storage.sol';
 import {I_P1Oracle} from '../intf/I_P1Oracle.sol';
 import {P1Types} from '../lib/P1Types.sol';
+import { SignedMath } from '../../lib/SignedMath.sol';
 
 /**
  * @title P1Getters
@@ -31,19 +32,25 @@ import {P1Types} from '../lib/P1Types.sol';
  */
 contract P1Getters is P1Storage {
     // ============ Account Getters ============
-
     /**
      * @notice Get the balance of an account, without accounting for changes in the index.
      *
      * @param  account  The address of the account to query the balances of.
      * @return          The balances of the account.
      */
-    function getAccountBalance(address account)
+    function getAccountBalance(
+        address account,
+        uint8 assetId
+    )
         external
         view
-        returns (P1Types.Balance memory)
+        returns (SignedMath.Int memory)
     {
-        return _BALANCES_[account];
+        P1Types.PositionAsset memory positionAsset  = _POSITIONS_[assetId][account];
+        return SignedMath.Int({
+            isPositive: positionAsset.positionIsPositive,
+            value: positionAsset.position
+        });
     }
 
     /**
@@ -52,13 +59,13 @@ contract P1Getters is P1Storage {
      * @param  account  The address of the account to query the index of.
      * @return          The index of the account.
      */
-    function getAccountIndex(address account)
-        external
-        view
-        returns (P1Types.Index memory)
-    {
-        return _LOCAL_INDEXES_[account];
-    }
+    // function getAccountIndex(address account)
+        // external
+        // view
+        // returns (P1Types.Index memory)
+    // {
+        // return _LOCAL_INDEXES_[account];
+    // }
 
     /**
      * @notice Gets the local operator status of an operator for a particular account.
@@ -116,15 +123,6 @@ contract P1Getters is P1Storage {
      */
     function getFunderContract() external view returns (address) {
         return _FUNDER_;
-    }
-
-    /**
-     * @notice Gets the most recently cached global index.
-     *
-     * @return The most recently cached global index.
-     */
-    function getGlobalIndex() external view returns (P1Types.Index memory) {
-        return _GLOBAL_INDEX_;
     }
 
     /**

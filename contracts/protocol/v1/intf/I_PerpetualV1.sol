@@ -87,17 +87,6 @@ interface I_PerpetualV1 {
     // ============ Account Getters ============
 
     /**
-     * @notice Get the balance of an account, without accounting for changes in the index.
-     *
-     * @param  account  The address of the account to query the balances of.
-     * @return          The balances of the account.
-     */
-    function getAccountBalance(address account)
-        external
-        view
-        returns (P1Types.Balance memory);
-
-    /**
      * @notice Gets the most recently cached index of an account.
      *
      * @param  account  The address of the account to query the index of.
