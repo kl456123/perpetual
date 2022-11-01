@@ -47,6 +47,8 @@ export async function deployContract(
   const contract = await Contract.deploy(...constructorArgs);
 
   await contract.deployed();
+  console.log(`${contractName} deployed to:`, contract.address);
+
   return contract;
 }
 
@@ -140,8 +142,8 @@ async function deployTestContracts(
     addressBook['Test_P1Funder'] = (
       await deployContract('Test_P1Funder')
     ).address;
-    addressBook['WETH9'] = (await deployContract('WETH9')).address;
   }
+  addressBook['WETH9'] = (await deployContract('WETH9')).address;
   const chainlinkOracle = await deployContract('Test_ChainlinkAggregator');
   // set fake price in decimal 18
   await chainlinkOracle.setAnswer(ethers.utils.parseUnits('18200', 18));
