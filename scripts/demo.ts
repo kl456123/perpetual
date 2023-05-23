@@ -43,12 +43,7 @@ async function fillOrder(
 
 async function checkBalance(perpetual: Perpetual, makerAddr: address) {
   const makerBalance =
-    (await perpetual.contracts.perpetualProxy.getAccountBalance(makerAddr)) as {
-      marginIsPositive: boolean;
-      positionIsPositive: boolean;
-      margin: BigNumber;
-      position: BigNumber;
-    };
+    await perpetual.contracts.perpetualProxy.getAccountBalance(makerAddr);
   const margin = makerBalance.marginIsPositive
     ? new BigNumber(makerBalance.margin.toString())
     : new BigNumber(makerBalance.margin.toString()).negated();
